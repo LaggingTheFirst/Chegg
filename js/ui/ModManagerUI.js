@@ -147,6 +147,71 @@ export class ModManagerUI {
             </div>`;
         }
 
+        // External URL section
+        html += `
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="margin-top: 0; font-size: 1rem;">Load from URL</h3>
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <input type="text" id="external-mod-url" placeholder="https://example.com/mod.json" 
+                        style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 4px; font-family: inherit;">
+                    <button class="action-btn primary" id="btn-load-external" style="padding: 8px 16px;">Load</button>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+                    <span style="color: #f59e0b;">⚠️ Warning:</span> Loading external mods executes code. Only use URLs from sources you trust.
+                </div>
+            </div>
+        `;
+
+        // External mods list
+        if (this.modManager.externalUrls.length > 0) {
+            html += `
+                <div style="margin-top: 20px;">
+                    <h4 style="margin-bottom: 8px; font-size: 0.85rem; color: var(--text-secondary);">External Sources</h4>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        ${this.modManager.externalUrls.map(url => `
+                            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+                                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px; color: var(--text-muted);">${url}</span>
+                                <button class="remove-external-btn" data-url="${url}" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 2px 8px;">Remove</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         container.innerHTML = html;
+
+        // Add event listeners for new elements
+        const loadBtn = this.overlay.querySelector('#btn-load-external');
+        const urlInput = this.overlay.querySelector('#external-mod-url');
+
+        loadBtn.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) return;
+
+            const confirmed = window.confirm(
+                "⚠️ SAFETY WARNING ⚠️\n\n" +
+                "Loading external mods can be dangerous. Mods can contain code that executes in your browser.\n\n" +
+                "Are you sure you want to load this mod?\n\n" +
+                url
+            );
+
+            if (confirmed) {
+                loadBtn.disabled = true;
+                loadBtn.textContent = '...';
+                await this.modManager.loadExternalMod(url);
+                this.renderContent();
+            }
+        });
+
+        // Remove buttons
+        this.overlay.querySelectorAll('.remove-external-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const url = btn.dataset.url;
+                btn.disabled = true;
+                await this.modManager.removeExternalMod(url);
+                this.renderContent();
+            });
+        });
     }
 }

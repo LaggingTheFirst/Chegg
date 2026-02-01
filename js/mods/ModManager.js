@@ -5,9 +5,18 @@ export class ModManager {
     constructor() {
         this.minions = new Map();
         this.abilities = new Map();
+        this.externalUrls = this.loadExternalUrls();
         this.errors = [];
         this.warnings = [];
         this.loaded = false;
+    }
+
+    loadExternalUrls() {
+        return JSON.parse(localStorage.getItem('chegg_external_mods') || '[]');
+    }
+
+    saveExternalUrls() {
+        localStorage.setItem('chegg_external_mods', JSON.stringify(this.externalUrls));
     }
 
     // load everything from the mods folder
@@ -17,11 +26,62 @@ export class ModManager {
 
         await Promise.all([
             this.loadMinions(),
-            this.loadAbilities()
+            this.loadAbilities(),
+            this.loadExternalMods()
         ]);
 
         this.loaded = true;
         this.logSummary();
+    }
+
+    async loadExternalMods() {
+        for (const url of this.externalUrls) {
+            await this.loadExternalMod(url, true);
+        }
+    }
+
+    async loadExternalMod(url, skipSave = false) {
+        if (!url) return;
+
+        // basic cleanup
+        url = url.trim().replace(/\\/g, '/');
+
+        // ensure relative paths are resolved against the site root
+        // rather than relative to this script file
+        if (!url.startsWith('http') && !url.startsWith('/')) {
+            url = new URL(url, window.location.href).href;
+        }
+
+        // Fix raw MIME type issue
+        // Proxy through jsDelivr for correct application/javascript header
+        if (url.includes('raw.githubusercontent.com')) {
+            url = url.replace('raw.githubusercontent.com', 'cdn.jsdelivr.net/gh')
+                .replace(/\/refs\/heads\//, '@');
+        }
+
+        try {
+            if (url.endsWith('.json')) {
+                await this.loadMinionFile(url);
+            } else if (url.endsWith('.js')) {
+                await this.loadAbilityFile(url, url);
+            } else {
+                // assume minion if unsure
+                await this.loadMinionFile(url);
+            }
+
+            if (!skipSave && !this.externalUrls.includes(url)) {
+                this.externalUrls.push(url);
+                this.saveExternalUrls();
+            }
+        } catch (e) {
+            this.errors.push({ type: 'external', path: url, error: e.message });
+        }
+    }
+
+    removeExternalMod(url) {
+        this.externalUrls = this.externalUrls.filter(u => u !== url);
+        this.saveExternalUrls();
+        return this.reload();
     }
 
     // scan mods/minions for json files via index
@@ -29,7 +89,7 @@ export class ModManager {
         try {
             const indexResponse = await fetch('mods/mods.json');
             if (!indexResponse.ok) {
-                this.warnings.push('No mods.json found, skipping custom minions');
+                //this.warnings.push('No mods.json found, skipping custom minions');
                 return;
             }
 
@@ -134,10 +194,10 @@ export class ModManager {
     }
 
     async loadAbilityFile(url, displayPath) {
+        const path = displayPath || url;
         try {
             const module = await import(url);
             const ability = module.default;
-            const path = displayPath || url;
 
             if (!ability || !ability.id) {
                 this.errors.push({ type: 'ability', path, error: 'Ability must export default with id' });

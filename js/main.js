@@ -320,7 +320,7 @@ class CheggGame {
         // dummy instance for logic
         const minionInstance = this.minionLoader.createSpecializedMinion(minion.id, minion.owner);
         Object.assign(minionInstance, minion);
-        // Restore fresh movement config (in case existing minion has stale data)
+        // Restore fresh movement config
         if (config.movement) {
             minionInstance.movement = config.movement;
         }
@@ -352,20 +352,11 @@ class CheggGame {
     }
 
     checkAndShowAbilityTargets(minion, config) {
-        if (config.abilities.includes('teleport')) {
-            const targets = this.abilitySystem.getValidTargets(minion, 'teleport');
+        for (const ability of config.abilities) {
+            const targets = this.abilitySystem.getValidTargets(minion, ability);
             if (targets.length > 0) {
                 this.boardUI.highlightAbilityTargets(targets);
-                this.currentAbility = 'teleport';
-                this.mode = 'selectingAbility';
-            }
-        }
-
-        if (config.abilities.includes('pull')) {
-            const targets = this.abilitySystem.getValidTargets(minion, 'pull');
-            if (targets.length > 0) {
-                this.boardUI.highlightAbilityTargets(targets);
-                this.currentAbility = 'pull';
+                this.currentAbility = ability;
                 this.mode = 'selectingAbility';
             }
         }
@@ -409,6 +400,12 @@ class CheggGame {
         if (!this.selectedMinion || !this.currentAbility) return;
 
         const minion = this.selectedMinion;
+
+        if (!this.turnManager.canMinionUseAbility(minion)) {
+            this.setHint('This minion cannot use abilities');
+            return;
+        }
+
         const config = this.minionLoader.getConfig(minion.id);
         const abilityCost = config.abilityCost || 1;
 
@@ -479,6 +476,12 @@ class CheggGame {
         if (!this.selectedMinion) return;
 
         const minion = this.selectedMinion;
+
+        if (!this.turnManager.canMinionMove(minion)) {
+            this.setHint('This minion cannot move');
+            return;
+        }
+
         const needsDash = minion.hasMoved;
         const isVillager = minion.id === 'villager';
 
@@ -544,6 +547,12 @@ class CheggGame {
         if (!this.selectedMinion) return;
 
         const minion = this.selectedMinion;
+
+        if (!this.turnManager.canMinionAttack(minion)) {
+            this.setHint('This minion cannot attack');
+            return;
+        }
+
         const target = this.gameState.getMinionAt(row, col);
 
         if (!target || target.owner === minion.owner) {

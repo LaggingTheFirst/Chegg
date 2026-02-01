@@ -1,6 +1,6 @@
 export class DeckManager {
     static DECK_SIZE = 15;
-    static INITIAL_DRAW = 3;
+    static INITIAL_DRAW = 2;
 
     static createDeck(minionConfigs) {
         // configs -> deck objects

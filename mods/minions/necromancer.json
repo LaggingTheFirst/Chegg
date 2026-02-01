@@ -1,0 +1,19 @@
+{
+    "id": "necromancer",
+    "name": "Necromancer",
+    "cost": 4,
+    "description": "A dark mage that can raise the dead. High cost but powerful spawning ability.",
+    "movement": {
+        "pattern": "lateral",
+        "range": 1
+    },
+    "attack": {
+        "pattern": "lateral",
+        "range": 1
+    },
+    "abilities": [
+        "raise_dead"
+    ],
+    "abilityCost": 2,
+    "image": "examplemod/necromancer.png"
+}
