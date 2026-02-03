@@ -1,4 +1,28 @@
 /* === CSS Variables === */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
 :root {
     /* Colors */
     --bg-dark: #0f0f14;
@@ -960,4 +984,14 @@ a {
 .board-grid-wrapper.flipped .damage-text,
 .board-grid-wrapper.flipped .heal-text {
     transform: translate(-50%, -50%) rotate(180deg);
+}
+
+/* Action Hint */
+.action-hint {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    height: 20px;
+    margin-bottom: 5px;
+    text-align: center;
+    font-style: italic;
 }

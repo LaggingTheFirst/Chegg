@@ -10,6 +10,7 @@ import { InfoPanel } from './ui/InfoPanel.js';
 import { DeckBuilder } from './ui/DeckBuilder.js';
 import { ModManager } from './mods/ModManager.js';
 import { ModManagerUI } from './ui/ModManagerUI.js';
+import { NetworkClient } from './multiplayer/NetworkClient.js';
 
 class CheggGame {
     constructor() {
@@ -18,6 +19,7 @@ class CheggGame {
         this.minionLoader = null;
         this.abilitySystem = null;
         this.modManager = null;
+        this.networkClient = new NetworkClient(this);
 
         // ui stuff
         this.boardUI = null;
@@ -30,6 +32,8 @@ class CheggGame {
 
         // current state
         this.mode = 'idle'; // idle, selectingSpawn, selectingMove, selectingAttack, selectingAbility
+        this.isOnline = false;
+        this.playerColor = 'blue'; // blue by default for local
         this.selectedMinion = null;
         this.selectedCard = null;
         this.currentAbility = null;
@@ -68,10 +72,37 @@ class CheggGame {
                 
                 <div style="display: flex; flex-direction: column; gap: 12px;">
                     <button class="action-btn primary" id="btn-quick-start" style="width: 100%; padding: 12px;">
-                        Quick Start (Default Decks)
+                        Quick Start (Local Decks)
+                    </button>
+                    <button class="action-btn secondary" id="btn-custom-local" style="width: 100%; padding: 12px;">
+                        Custom Local Game
+                    </button>
+                    <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
+                        <button class="action-btn secondary" id="btn-matchmaking" style="flex: 1; padding: 12px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5);">
+                            Find Online Match
+                        </button>
+                        <div id="lobby-elo-badge" style="
+                            display: ${this.networkClient.authManager.isAuthenticated() ? 'flex' : 'none'};
+                            background: var(--bg-secondary);
+                            border: 1px solid var(--border);
+                            border-radius: 6px;
+                            padding: 0 12px;
+                            height: 42px;
+                            align-items: center;
+                            justify-content: center;
+                            font-weight: 800;
+                            color: var(--mana-color);
+                            min-width: 60px;
+                        ">${this.networkClient.authManager.elo}</div>
+                    </div>
+                    <button class="action-btn secondary" id="btn-custom-online" style="width: 100%; padding: 12px;">
+                        Custom Online Game
+                    </button>
+                    <button class="action-btn secondary" id="btn-profile" style="width: 100%; padding: 12px; background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.5);">
+                        My Profile / Account
                     </button>
                     <button class="action-btn secondary" id="btn-custom-decks" style="width: 100%; padding: 12px;">
-                        Build Custom Decks
+                        Deck Manager
                     </button>
                     <button class="action-btn secondary" id="btn-mods" style="width: 100%; padding: 12px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5);">
                         Mod Manager (${this.modManager.getLoadedMods().minions.length + this.modManager.getLoadedMods().abilities.length})
@@ -91,6 +122,56 @@ class CheggGame {
             this.startGameWithDefaultDecks();
         });
 
+        overlay.querySelector('#btn-custom-local').addEventListener('click', () => {
+            overlay.remove();
+            this.startCustomLocalMatch();
+        });
+
+        overlay.querySelector('#btn-matchmaking').addEventListener('click', () => {
+            if (!this.networkClient.authManager.isAuthenticated()) {
+                this.showProfileModal(() => this.startMatchmaking());
+                return;
+            }
+            this.startMatchmaking();
+        });
+
+        overlay.querySelector('#btn-custom-online').addEventListener('click', () => {
+            this.showCustomOnlineMenu();
+        });
+
+        const btnProfile = overlay.querySelector('#btn-profile');
+        btnProfile.addEventListener('click', () => {
+            this.showProfileModal();
+        });
+
+        // Listen for auth success to update menu rank
+        document.addEventListener('chegg:auth_success', (e) => {
+            const { elo } = e.detail;
+            const badge = overlay.querySelector('#lobby-elo-badge');
+            if (badge) {
+                badge.textContent = elo;
+                badge.style.display = 'flex';
+            }
+            if (btnProfile) {
+                btnProfile.textContent = `Account (${elo} Elo)`;
+            }
+        });
+
+        // Listen for rating changes during/after game
+        document.addEventListener('chegg:rating_change', (e) => {
+            const auth = this.networkClient.authManager;
+            const myName = auth.username;
+            const myData = e.detail.blue.username === myName ? e.detail.blue : e.detail.red;
+
+            const badge = overlay.querySelector('#lobby-elo-badge');
+            if (badge) {
+                badge.textContent = myData.newElo;
+            }
+            if (btnProfile) {
+                btnProfile.textContent = `Account (${myData.newElo} Elo)`;
+            }
+        });
+
         overlay.querySelector('#btn-custom-decks').addEventListener('click', () => {
             overlay.remove();
             this.startDeckBuilding();
@@ -101,48 +182,160 @@ class CheggGame {
         });
     }
 
+    showCustomOnlineMenu() {
+        if (!this.networkClient.authManager.isAuthenticated()) {
+            this.showProfileModal(() => this.showCustomOnlineMenu());
+            return;
+        }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.id = 'online-menu';
+
+        overlay.innerHTML = `
+            <div class="modal" style="width: 600px;">
+                <div class="modal-title">Custom Online Game</div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h3 style="margin-bottom: 12px; font-size: 0.9rem;">Create Room</h3>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <input type="text" id="room-name" placeholder="Room Name" class="action-btn secondary" style="text-align: left; cursor: text;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 0.8rem;">Timer:</span>
+                                <input type="number" id="room-timer" value="60" min="10" max="300" class="action-btn secondary" style="width: 70px; text-align: left; cursor: text;">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="save-game" checked>
+                                <label for="save-game" style="font-size: 0.8rem;">Save Game (LevelDB)</label>
+                            </div>
+                            <button class="action-btn primary" id="btn-do-create">Create & Join</button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 style="margin-bottom: 12px; font-size: 0.9rem;">Active Rooms</h3>
+                        <div id="room-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="color: var(--text-muted); font-size: 0.8rem;">Loading rooms...</div>
+                        </div>
+                        <button class="action-btn secondary" id="btn-refresh-rooms" style="margin-top: 10px; width: 100%; font-size: 0.7rem;">Refresh</button>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="action-btn secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const refreshRooms = () => {
+            const list = overlay.querySelector('#room-list');
+            this.networkClient.getCustomRooms((rooms) => {
+                list.innerHTML = rooms.length ? '' : '<div style="color: var(--text-muted); font-size: 0.8rem;">No rooms found</div>';
+                rooms.forEach(room => {
+                    const roomEl = document.createElement('div');
+                    roomEl.className = 'room-item';
+                    roomEl.style = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;';
+                    roomEl.innerHTML = `
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.85rem; font-weight: 600;">${room.name}</div>
+                            <div style="font-size: 0.7rem; color: var(--text-muted);">${room.players}/2 players • ${room.timer}s</div>
+                        </div>
+                        <div style="display: flex; gap: 4px;">
+                            ${room.status === 'waiting' ? `<button class="action-btn primary" style="padding: 4px 8px; font-size: 0.7rem;" onclick="window.game.joinRoom('${room.id}')">Join</button>` : ''}
+                            <button class="action-btn secondary" style="padding: 4px 8px; font-size: 0.7rem;" onclick="window.game.spectateRoom('${room.id}')">Spectate</button>
+                        </div>
+                    `;
+                    list.appendChild(roomEl);
+                });
+            });
+        };
+
+        refreshRooms();
+        overlay.querySelector('#btn-refresh-rooms').addEventListener('click', refreshRooms);
+
+        overlay.querySelector('#btn-do-create').addEventListener('click', () => {
+            const name = overlay.querySelector('#room-name').value || 'Chegg Room';
+            const timer = parseInt(overlay.querySelector('#room-timer').value) || 60;
+            const saveGame = overlay.querySelector('#save-game').checked;
+
+            this.selectDeck((deck) => {
+                this.networkClient.createCustomRoom(name, timer, deck, saveGame);
+                overlay.remove();
+            });
+        });
+    }
+
+    joinRoom(roomId) {
+        this.selectDeck((deck) => {
+            this.networkClient.joinCustomRoom(roomId, deck);
+            const menu = document.getElementById('online-menu');
+            if (menu) menu.remove();
+        });
+    }
+
+    spectateRoom(roomId) {
+        this.networkClient.spectateRoom(roomId);
+        const menu = document.getElementById('online-menu');
+        if (menu) menu.remove();
+    }
+
     startDeckBuilding() {
         this.deckBuilder = new DeckBuilder(this.minionLoader);
 
-        // blue goes first
-        this.deckBuilder.show('blue', (blueDeck) => {
-            const blueConfig = blueDeck;
-
-            // then red
-            this.deckBuilder.show('red', (redDeck) => {
-                this.startGame(blueConfig, redDeck);
-            });
+        // Standalone editor mode: just one builder, then return to menu
+        this.deckBuilder.show('blue', (savedDeck) => {
+            // After confirming, they've already had the chance to save it.
+            // Just return to start screen.
+            this.showStartScreen();
         });
     }
 
     startGameWithDefaultDecks() {
         const defaultDeck = DeckManager.createDefaultDeck(this.minionLoader);
-        // generic starting decks
-        const blueDeck = defaultDeck.map(m => ({ ...m }));
-        const redDeck = defaultDeck.map(m => ({ ...m }));
-
-        this.startGame(blueDeck, redDeck);
+        this.startGame(defaultDeck, [...defaultDeck]);
     }
 
-    startGame(blueDeck, redDeck) {
+    startCustomLocalMatch() {
+        this.selectDeck((blueDeck) => {
+            // delay to let the previous modal fade if any
+            setTimeout(() => {
+                this.selectDeck((redDeck) => {
+                    this.startGame(blueDeck, redDeck);
+                });
+            }, 150);
+        });
+    }
+
+    startGame(blueDeck, redDeck, isOnline = false) {
+        this.isOnline = isOnline;
         this.gameState = new GameState();
         this.turnManager = new TurnManager(this.gameState);
         this.abilitySystem = new AbilitySystem(this.gameState);
         this.abilitySystem.loadFromModManager(this.modManager);
 
-        // prep decks, shuffle happens inside
-        DeckManager.initializePlayerDeck(this.gameState.players.blue, blueDeck);
-        DeckManager.initializePlayerDeck(this.gameState.players.red, redDeck);
+        if (!isOnline) {
+            this.playerColor = 'blue';
+            // prep decks, shuffle happens inside
+            DeckManager.initializePlayerDeck(this.gameState.players.blue, blueDeck);
+            DeckManager.initializePlayerDeck(this.gameState.players.red, redDeck);
 
-        // start with villager in hand
-        const villagerCard = this.minionLoader.getConfig('villager');
-        if (villagerCard) {
-            this.gameState.players.blue.hand.unshift({ ...villagerCard, deckCard: true });
-            this.gameState.players.red.hand.unshift({ ...villagerCard, deckCard: true });
+            // start with villager in hand
+            const villagerCard = this.minionLoader.getConfig('villager');
+            if (villagerCard) {
+                this.gameState.players.blue.hand.unshift({ ...villagerCard, deckCard: true });
+                this.gameState.players.red.hand.unshift({ ...villagerCard, deckCard: true });
+            }
         }
 
         this.setupUI();
-        this.turnManager.startGame();
+
+        if (!isOnline) {
+            this.turnManager.startGame();
+        }
+
         this.render();
     }
 
@@ -162,16 +355,19 @@ class CheggGame {
                 <div id="blue-panel-container"></div>
                 
                 <div class="board-wrapper">
+                    <div class="action-hint" id="action-hint"></div>
                     <div class="board-container" id="board-container"></div>
                     
                     <div id="current-hand-container"></div>
                     
                     <div class="action-bar">
                         <button class="action-btn secondary" id="btn-cancel">Cancel</button>
+                        <button class="action-btn secondary" id="btn-forfeit" style="display: none;">Forfeit</button>
                         <button class="action-btn primary" id="btn-end-turn">End Turn</button>
                     </div>
                     
-                    <div id="action-hint" style="text-align: center; margin-top: 8px; color: var(--text-secondary); font-size: 0.85rem;"></div>
+                    <div id="room-info" style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 0.75rem;"></div>
+                    <div id="turn-timer" style="text-align: center; font-weight: bold; color: var(--player-red); margin-top: 4px;"></div>
                 </div>
                 
                 <div id="red-panel-container"></div>
@@ -185,11 +381,20 @@ class CheggGame {
         this.bluePanel = new InfoPanel(this.gameState, '#blue-panel-container', 'blue');
         this.redPanel = new InfoPanel(this.gameState, '#red-panel-container', 'red');
 
-        this.currentHand = new HandUI(this.gameState, '#current-hand-container', 'blue');
+        this.currentHand = new HandUI(this.gameState, '#current-hand-container', this.playerColor);
         this.currentHand.onCardClick = (card, index) => this.handleCardClick(card, index);
 
         document.getElementById('btn-cancel').addEventListener('click', () => this.cancelAction());
         document.getElementById('btn-end-turn').addEventListener('click', () => this.endTurn());
+        document.getElementById('btn-forfeit').addEventListener('click', () => {
+            if (confirm('Are you sure you want to forfeit?')) {
+                if (this.isOnline) this.networkClient.forfeit();
+            }
+        });
+
+        if (this.isOnline) {
+            document.getElementById('btn-forfeit').style.display = 'block';
+        }
 
         // clicking away cancels stuff
         document.getElementById('board-container').addEventListener('click', (e) => {
@@ -216,15 +421,17 @@ class CheggGame {
         const turnText = document.getElementById('turn-text');
         const turnNumber = document.getElementById('turn-number');
 
-        indicator.className = `turn-indicator ${this.gameState.currentPlayer}`;
-        turnText.textContent = `${this.gameState.currentPlayer === 'blue' ? 'Blue' : 'Red'}'s Turn`;
-        turnNumber.textContent = `Turn ${this.gameState.turnNumber}`;
+        const currentPlayerName = this.gameState.metadata?.[this.gameState.currentPlayer]?.username || (this.gameState.currentPlayer === 'blue' ? 'Blue' : 'Red');
+        if (indicator) indicator.className = `turn-indicator ${this.gameState.currentPlayer}`;
+        if (turnText) turnText.textContent = `${currentPlayerName}'s Turn`;
+        if (turnNumber) turnNumber.textContent = `Turn ${this.gameState.turnNumber}`;
 
         this.updateActionHint();
     }
 
     updateActionHint() {
         const hint = document.getElementById('action-hint');
+        if (!hint) return;
 
         switch (this.mode) {
             case 'idle':
@@ -256,8 +463,9 @@ class CheggGame {
         this.boardUI.clearHighlights();
 
         // Flip board if blue (since blue is row 0-1, normally top)
-        // We want current player at bottom
-        this.boardUI.setFlip(this.gameState.currentPlayer === 'blue');
+        // In online mode, we follow our assigned color
+        const flip = this.isOnline ? (this.networkClient.color === 'blue') : (this.gameState.currentPlayer === 'blue');
+        this.boardUI.setFlip(flip);
 
         this.render();
     }
@@ -269,6 +477,9 @@ class CheggGame {
     }
 
     handleCardClick(card, index) {
+        if (this.isSpectator()) return;
+        if (this.isOnline && this.gameState.currentPlayer !== this.playerColor) return;
+
         // too broke
         if (!ManaSystem.canAfford(this.gameState.players[this.gameState.currentPlayer], card.cost)) {
             return;
@@ -285,6 +496,8 @@ class CheggGame {
     }
 
     handleMinionClick(minion, row, col) {
+        if (this.isSpectator()) return;
+        if (this.isOnline && this.gameState.currentPlayer !== this.playerColor) return;
         if (this.mode === 'selectingAbility') {
             this.executeAbility(minion, row, col);
             return;
@@ -297,6 +510,8 @@ class CheggGame {
         }
 
         if (minion.owner === this.gameState.currentPlayer) {
+            // in online mode, only select your own minions on your turn
+            if (this.isOnline && minion.owner !== this.playerColor) return;
             this.selectMinion(minion);
         }
     }
@@ -363,6 +578,8 @@ class CheggGame {
     }
 
     handleTileClick(row, col) {
+        if (this.isSpectator()) return;
+        if (this.isOnline && this.gameState.currentPlayer !== this.playerColor) return;
         if (this.mode === 'selectingSpawn') {
             this.spawnMinion(row, col);
         } else if (this.mode === 'selectingMove' && this.selectedMinion) {
@@ -400,6 +617,16 @@ class CheggGame {
         if (!this.selectedMinion || !this.currentAbility) return;
 
         const minion = this.selectedMinion;
+
+        if (this.isOnline) {
+            this.networkClient.sendAction('USE_ABILITY', {
+                minionId: minion.instanceId,
+                targetRow: row,
+                targetCol: col
+            });
+            this.cancelAction();
+            return;
+        }
 
         if (!this.turnManager.canMinionUseAbility(minion)) {
             this.setHint('This minion cannot use abilities');
@@ -443,6 +670,12 @@ class CheggGame {
         const { card, index } = this.selectedCard;
         const player = this.gameState.currentPlayer;
 
+        if (this.isOnline) {
+            this.networkClient.sendAction('SPAWN_MINION', { cardIndex: index, row, col });
+            this.cancelAction();
+            return;
+        }
+
         if (!this.gameState.isSpawnZone(row, player)) {
             this.setHint('Must spawn in your spawn zone');
             return;
@@ -476,6 +709,12 @@ class CheggGame {
         if (!this.selectedMinion) return;
 
         const minion = this.selectedMinion;
+
+        if (this.isOnline) {
+            this.networkClient.sendAction('MOVE_MINION', { minionId: minion.instanceId, toRow: row, toCol: col });
+            this.cancelAction();
+            return;
+        }
 
         if (!this.turnManager.canMinionMove(minion)) {
             this.setHint('This minion cannot move');
@@ -547,6 +786,12 @@ class CheggGame {
         if (!this.selectedMinion) return;
 
         const minion = this.selectedMinion;
+
+        if (this.isOnline) {
+            this.networkClient.sendAction('ATTACK_MINION', { attackerId: minion.instanceId, targetRow: row, toCol: col });
+            this.cancelAction();
+            return;
+        }
 
         if (!this.turnManager.canMinionAttack(minion)) {
             this.setHint('This minion cannot attack');
@@ -648,6 +893,12 @@ class CheggGame {
     }
 
     endTurn() {
+        if (this.isOnline) {
+            this.networkClient.sendAction('END_TURN', {});
+            this.cancelAction();
+            return;
+        }
+
         if (this.gameState.phase === 'setup') {
             const player = this.gameState.currentPlayer;
             const minions = Array.from(this.gameState.minionRegistry.values());
@@ -691,7 +942,7 @@ class CheggGame {
                     The enemy Villager has been defeated after ${this.gameState.turnNumber} turns
                 </div>
                 <button class="action-btn primary" id="btn-play-again" style="padding: 12px 32px;">
-                    Play Again
+                    Return to Menu
                 </button>
             </div>
         `;
@@ -699,10 +950,268 @@ class CheggGame {
         document.body.appendChild(overlay);
 
         overlay.querySelector('#btn-play-again').addEventListener('click', () => {
-            overlay.remove();
-            document.getElementById('game-container').innerHTML = '';
-            this.showStartScreen();
+            window.location.reload(); // back to clean slate
         });
+    }
+
+    selectDeck(onSelected) {
+        const savedDecks = DeckManager.getSavedDeckNames();
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.style.zIndex = '3000';
+
+        let deckListHtml = '';
+        if (savedDecks.length === 0) {
+            deckListHtml = '<div style="color: var(--text-muted); margin: 20px 0;">No custom decks found.</div>';
+        } else {
+            deckListHtml = savedDecks.map(name => `
+                <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                    <button class="action-btn secondary" style="flex: 1; text-align: left;" onclick="this.closest('.modal-overlay').remove(); window.game._onDeckSelected('${name}')">
+                        🂡 ${name}
+                    </button>
+                    <button class="action-btn danger" style="padding: 4px 10px;" onclick="window.game._onDeleteDeck('${name}')">Del</button>
+                </div>
+            `).join('');
+        }
+
+        overlay.innerHTML = `
+            <div class="modal" style="width: 320px;">
+                <div class="modal-title">Select Deck</div>
+                <div style="margin: 20px 0; max-height: 300px; overflow-y: auto;">
+                    <button class="action-btn primary" style="width: 100%; margin-bottom: 12px;" onclick="this.closest('.modal-overlay').remove(); window.game._onDeckSelected('default')">
+                        Standard Starters
+                    </button>
+                    <div id="deck-list-container">
+                        ${deckListHtml}
+                    </div>
+                </div>
+                <button class="action-btn secondary" style="width: 100%;" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+            </div>
+        `;
+
+        this._onDeckSelected = (name) => {
+            const deckRaw = DeckManager.loadDeck(name, this.minionLoader);
+            onSelected(deckRaw || DeckManager.createDefaultDeck(this.minionLoader));
+        };
+
+        this._onDeleteDeck = (name) => {
+            if (confirm(`Delete deck "${name}"?`)) {
+                DeckManager.deleteDeck(name);
+                this.selectDeck(onSelected); // re-open to refresh
+                overlay.remove();
+            }
+        };
+
+        document.body.appendChild(overlay);
+    }
+
+    startMatchmaking() {
+        this.selectDeck((deck) => {
+            document.getElementById('start-screen').innerHTML = `
+                <div class="modal" style="text-align: center;">
+                    <div class="modal-title">Finding Match...</div>
+                    <div class="preloader-spinner" style="margin: 20px auto;"></div>
+                    <button class="action-btn secondary" onclick="window.location.reload()">Cancel</button>
+                </div>
+            `;
+            this.networkClient.findMatch(deck);
+        });
+    }
+
+
+    onServerStateUpdate(newStateData) {
+        if (document.getElementById('start-screen')) {
+            document.getElementById('start-screen').remove();
+        }
+
+        if (!this.gameState) {
+            this.startGame([], [], true);
+            this.playerColor = this.networkClient.color;
+            if (this.playerColor === 'blue') {
+                this.boardUI.setFlip(true);
+            }
+        }
+
+        // map raw data back to engine state
+        this.gameState.metadata = newStateData.metadata;
+        this.gameState.currentPlayer = newStateData.currentPlayer;
+        this.gameState.turnNumber = newStateData.turnNumber;
+        this.gameState.phase = newStateData.phase;
+        this.gameState.winner = newStateData.winner;
+        this.gameState.board = newStateData.board;
+        this.gameState.players = newStateData.players;
+
+        // rebuild minion registry
+        this.gameState.minionRegistry.clear();
+        for (let r = 0; r < 10; r++) {
+            for (let c = 0; c < 8; c++) {
+                const m = this.gameState.board[r][c].minion;
+                if (m) {
+                    this.gameState.minionRegistry.set(m.instanceId, m);
+                }
+            }
+        }
+
+        if (this.gameState.phase === 'gameOver') {
+            this.showGameOver();
+        }
+
+        this.render();
+    }
+
+    updateTimer(data) {
+        const { playerTimes, currentPlayer } = data;
+
+        // Update the header timer for the active player
+        const el = document.getElementById('turn-timer');
+        if (el) {
+            const time = playerTimes[currentPlayer];
+            const mins = Math.floor(time / 60);
+            const secs = time % 60;
+            el.textContent = `${currentPlayer === 'blue' ? 'Blue' : 'Red'}: ${mins}:${secs.toString().padStart(2, '0')}`;
+            if (time < 30) el.style.color = '#ef4444';
+            else el.style.color = 'var(--text-muted)';
+        }
+
+        this.bluePanel.updateTimer(playerTimes.blue);
+        this.redPanel.updateTimer(playerTimes.red);
+    }
+
+    showRatingChange(data) {
+        const myName = this.networkClient.authManager.username;
+        const result = (data.blue.username === myName) ? data.blue : data.red;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.style.zIndex = '2000';
+
+        const color = result.diff >= 0 ? 'var(--player-blue)' : 'var(--player-red)';
+        const sign = result.diff >= 0 ? '+' : '';
+
+        overlay.innerHTML = `
+            <div class="modal" style="width: 300px; text-align: center; border: 2px solid ${color};">
+                <div class="modal-title">RANK UPDATED</div>
+                <div style="font-size: 2.5rem; font-weight: 800; margin: 20px 0;">
+                    ${result.newElo}
+                </div>
+                <div style="color: ${color}; font-weight: 600; font-size: 1.2rem; margin-bottom: 20px;">
+                    ${sign}${result.diff} Rating
+                </div>
+                <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                    Match: vs ${data.blue.username === myName ? data.red.username : data.blue.username}
+                </p>
+                <button class="action-btn primary" style="width: 100%; margin-top: 20px;" onclick="location.reload()">Return to Menu</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    showError(message) {
+        console.error('[GAME ERROR]', message);
+
+        const toast = document.createElement('div');
+        toast.className = 'error-toast';
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 10000;
+            font-weight: 600;
+            animation: slideIn 0.3s ease-out;
+        `;
+        toast.textContent = message;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease-in forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    showProfileModal(onComplete) {
+        const auth = this.networkClient.authManager;
+        const creds = auth.getCredentials() || { username: '', token: '' };
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay active';
+        overlay.id = 'profile-modal';
+
+        overlay.innerHTML = `
+            <div class="modal" style="width: 400px; text-align: center;">
+                <div class="modal-title">Player Profile</div>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 20px;">
+                    Your identity is secured by a Secret Token. Keep it safe to use your rank on other devices!
+                </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px; text-align: left;">
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">USERNAME</label>
+                        <input type="text" id="prof-username" value="${creds.username}" class="action-btn secondary" style="width: 100%; text-align: left; cursor: text;" placeholder="Enter username...">
+                    </div>
+                    
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-muted);">SECRET TOKEN (DO NOT SHARE)</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="password" id="prof-token" value="${creds.token}" class="action-btn secondary" style="width: 100%; text-align: left; cursor: text;" readonly>
+                            <button class="action-btn secondary" id="btn-show-token" style="padding: 5px 10px;">👁️</button>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <p style="font-size: 0.7rem; color: var(--player-red);">
+                            <strong>Warning:</strong> Pasting a new token will overwrite your current account!
+                        </p>
+                        <button class="action-btn secondary" id="btn-import-token" style="font-size: 0.7rem; width: 100%; margin-top: 5px;">Import Existing Token</button>
+                    </div>
+
+                    <button class="action-btn primary" id="btn-save-profile" style="width: 100%; padding: 12px; margin-top: 10px;">Save & Connect</button>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <button class="action-btn secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const tokenInput = overlay.querySelector('#prof-token');
+        overlay.querySelector('#btn-show-token').addEventListener('click', () => {
+            tokenInput.type = tokenInput.type === 'password' ? 'text' : 'password';
+        });
+
+        overlay.querySelector('#btn-import-token').addEventListener('click', () => {
+            const newToken = prompt('Paste your Secret Token here:');
+            if (newToken) {
+                tokenInput.value = newToken;
+            }
+        });
+
+        overlay.querySelector('#btn-save-profile').addEventListener('click', () => {
+            const username = overlay.querySelector('#prof-username').value.trim();
+            const token = tokenInput.value.trim();
+
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+
+            auth.setCredentials(username, token);
+            this.networkClient.connect(); // Reconnect with new auth
+
+            overlay.remove();
+            if (onComplete) onComplete();
+        });
+    }
+
+    isSpectator() {
+        return this.playerColor === 'spectator';
     }
 }
 

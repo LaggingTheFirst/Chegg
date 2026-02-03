@@ -47,13 +47,19 @@ export class InfoPanel {
             manaOrbs.push(`<div class="${orbClass}"></div>`);
         }
 
-        const playerName = this.player === 'blue' ? 'Blue Player' : 'Red Player';
+        const metadata = this.gameState.metadata?.[this.player];
+        const playerName = metadata ? metadata.username : (this.player === 'blue' ? 'Blue Player' : 'Red Player');
+        const playerElo = metadata ? ` <span style="font-size: 0.7rem; opacity: 0.7; font-weight: 400;">(${metadata.elo} Elo)</span>` : '';
         const deckCount = playerData.deck.length;
         const handCount = playerData.hand.length;
 
         this.panelElement.innerHTML = `
-            <div class="player-name ${this.player}">${playerName}</div>
+            <div class="player-name ${this.player}">${playerName}${playerElo}</div>
             
+            <div class="panel-timer" id="timer-${this.player}" style="font-family: monospace; font-size: 1.2rem; font-weight: 800; text-align: center; margin: 10px 0; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px;">
+                0:00
+            </div>
+
             <div class="mana-section">
                 <div class="mana-label"><img src="assets/mana.png" alt="Mana" style="width: 10px; height: 10px;"> Mana</div>
                 <div class="mana-display">
@@ -88,6 +94,22 @@ export class InfoPanel {
             </div>
             ` : ''}
         `;
+    }
+
+    updateTimer(time) {
+        const el = this.panelElement.querySelector(`#timer-${this.player}`);
+        if (el) {
+            const mins = Math.floor(time / 60);
+            const secs = time % 60;
+            el.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            if (time < 30) {
+                el.style.color = '#ef4444';
+                el.style.background = 'rgba(239, 68, 68, 0.2)';
+            } else {
+                el.style.color = 'white';
+                el.style.background = 'rgba(0,0,0,0.3)';
+            }
+        }
     }
 
     update() {

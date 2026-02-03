@@ -74,7 +74,7 @@ export class AbilitySystem {
             }
         });
 
-        // Parrot: Copy an adjacent unit's attack style
+        // Parrot: Copy an adjacent units attack style
         this.register('copyAttack', {
             name: 'Copy Attack',
             cost: 0,

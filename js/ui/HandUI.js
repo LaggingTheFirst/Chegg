@@ -55,6 +55,18 @@ export class HandUI {
         cardEl.className = 'card';
         cardEl.dataset.index = index;
 
+        if (card.hidden) {
+            cardEl.classList.add('hidden-card');
+            cardEl.style.opacity = '0.4';
+            cardEl.style.cursor = 'default';
+            cardEl.innerHTML = `
+                <div class="card-image" style="background: rgba(0,0,0,0.5);">?</div>
+                <div class="card-name">?</div>
+                <div class="card-cost">?</div>
+            `;
+            return cardEl;
+        }
+
         // can't afford or wrong turn
         if (!affordable || !isCurrentPlayer) {
             cardEl.classList.add('cannot-afford');

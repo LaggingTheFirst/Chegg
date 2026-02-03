@@ -2,12 +2,23 @@
     "name": "chegg",
     "version": "1.0.0",
     "description": "A turn-based deck-building strategy game",
+    "type": "module",
     "main": "index.html",
     "scripts": {
         "start": "npx serve .",
         "dev": "npx serve . -l 3000"
     },
-    "keywords": ["game", "strategy", "deck-building", "turn-based"],
+    "keywords": [
+        "game",
+        "strategy",
+        "deck-building",
+        "turn-based"
+    ],
     "author": "Original design by Gerg",
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "express": "^5.2.1",
+        "level": "^10.0.0",
+        "ws": "^8.19.0"
+    }
 }

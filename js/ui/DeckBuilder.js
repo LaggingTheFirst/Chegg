@@ -32,11 +32,17 @@ export class DeckBuilder {
         const playerName = this.currentPlayer === 'blue' ? 'Blue Player' : 'Red Player';
 
         return `
-            <div class="modal-title">Build Deck, ${playerName}</div>
+            <div class="modal-title">Deck Manager</div>
             
             <div class="deck-builder">
                 <div class="minion-pool-section">
-                    <div class="mana-label">Available Minions (click to add)</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div class="mana-label">Available Minions (click to add)</div>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="action-btn secondary" id="btn-default" style="font-size: 0.65rem; padding: 4px 8px;">Default Deck</button>
+                            <button class="action-btn secondary" id="btn-clear" style="font-size: 0.65rem; padding: 4px 8px; color: var(--player-red);">Clear</button>
+                        </div>
+                    </div>
                     <div class="minion-pool" id="minion-pool"></div>
                 </div>
                 
@@ -47,12 +53,23 @@ export class DeckBuilder {
                     <div class="deck-stats" id="deck-stats" style="margin-top: 15px;"></div>
                     
                     <div style="margin-top: 15px;">
-                        <button class="action-btn secondary" id="btn-clear">Clear Deck</button>
-                        <button class="action-btn secondary" id="btn-default">Load Default</button>
+                        <input type="text" id="deck-name-input" placeholder="Deck Name" style="width: 100%; padding: 8px; margin-bottom: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: white;">
+                        <button class="action-btn secondary" id="btn-save" style="width: 100%;">Save Deck</button>
                     </div>
-                    
+
                     <div style="margin-top: 15px;">
-                        <button class="action-btn primary" id="btn-confirm" disabled>Confirm Deck</button>
+                        <select id="deck-load-select" style="width: 100%; padding: 8px; margin-bottom: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: white;">
+                            <option value="">-- Load Saved Deck --</option>
+                        </select>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="action-btn secondary" id="btn-load" style="flex: 1;">Load Selected</button>
+                            <button class="action-btn danger" id="btn-delete" style="padding: 10px;">🗑️</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                        <button class="action-btn primary" id="btn-confirm" disabled style="width: 100%;">Finish & Exit</button>
+                        <button class="action-btn secondary" id="btn-back-menu" style="width: 100%;">Back to Menu</button>
                     </div>
                 </div>
             </div>
@@ -60,25 +77,84 @@ export class DeckBuilder {
     }
 
     bindEvents() {
-        this.overlay.querySelector('#btn-clear').addEventListener('click', () => {
-            this.currentDeck = [];
-            this.render();
-        });
+        const btnClear = this.overlay.querySelector('#btn-clear');
+        if (btnClear) {
+            btnClear.addEventListener('click', () => {
+                this.currentDeck = [];
+                this.render();
+            });
+        }
 
-        this.overlay.querySelector('#btn-default').addEventListener('click', () => {
-            this.currentDeck = DeckManager.createDefaultDeck(this.minionLoader);
-            this.render();
-        });
+        const btnDefault = this.overlay.querySelector('#btn-default');
+        if (btnDefault) {
+            btnDefault.addEventListener('click', () => {
+                this.currentDeck = DeckManager.createDefaultDeck(this.minionLoader);
+                this.render();
+            });
+        }
 
-        this.overlay.querySelector('#btn-confirm').addEventListener('click', () => {
-            // finish if full
-            if (this.currentDeck.length === DeckManager.DECK_SIZE) {
-                this.close();
-                if (this.onComplete) {
-                    this.onComplete(this.currentDeck);
+        const btnSave = this.overlay.querySelector('#btn-save');
+        if (btnSave) {
+            btnSave.addEventListener('click', () => {
+                const nameInput = this.overlay.querySelector('#deck-name-input');
+                const name = nameInput ? nameInput.value.trim() : '';
+                if (!name) return alert('Enter a name');
+                DeckManager.saveDeck(name, this.currentDeck);
+                this.updateLoadList();
+                alert('Deck saved!');
+            });
+        }
+
+        const btnLoad = this.overlay.querySelector('#btn-load');
+        if (btnLoad) {
+            btnLoad.addEventListener('click', () => {
+                const select = this.overlay.querySelector('#deck-load-select');
+                const name = select ? select.value : '';
+                if (!name) return;
+                const loaded = DeckManager.loadDeck(name, this.minionLoader);
+                if (loaded) {
+                    this.currentDeck = loaded;
+                    this.render();
                 }
-            }
-        });
+            });
+        }
+
+        const btnDelete = this.overlay.querySelector('#btn-delete');
+        if (btnDelete) {
+            btnDelete.addEventListener('click', () => {
+                const select = this.overlay.querySelector('#deck-load-select');
+                const name = select ? select.value : '';
+                if (!name) return;
+
+                if (confirm(`Are you sure you want to delete "${name}"?`)) {
+                    DeckManager.deleteDeck(name);
+                    this.updateLoadList();
+                }
+            });
+        }
+
+        const btnConfirm = this.overlay.querySelector('#btn-confirm');
+        if (btnConfirm) {
+            btnConfirm.addEventListener('click', () => {
+                if (this.currentDeck.length === DeckManager.DECK_SIZE) {
+                    this.close();
+                    if (this.onComplete) {
+                        this.onComplete(this.currentDeck);
+                    }
+                }
+            });
+        }
+
+        const btnBack = this.overlay.querySelector('#btn-back-menu');
+        if (btnBack) {
+            btnBack.addEventListener('click', () => {
+                this.close();
+                // If we were in a matchmaking flow, we should probably refresh start screen
+                // but for now just closing is fine.
+                this.close();
+                if (this.onComplete) this.onComplete(null);
+            });
+        }
     }
 
     render() {
@@ -86,13 +162,36 @@ export class DeckBuilder {
         this.renderDeckSlots();
         this.renderStats();
         this.updateConfirmButton();
+        this.updateLoadList();
+    }
+
+    updateLoadList() {
+        const select = this.overlay.querySelector('#deck-load-select');
+        const names = DeckManager.getSavedDeckNames();
+        const currentVal = select.value;
+
+        select.innerHTML = '<option value="">-- Load Saved Deck --</option>';
+        for (const name of names) {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
+        }
+        select.value = currentVal;
     }
 
     renderMinionPool() {
         const pool = this.overlay.querySelector('#minion-pool');
+        if (!pool) return;
         pool.innerHTML = '';
 
         const minions = this.minionLoader.getDeckBuildingConfigs();
+        console.log(`[DeckBuilder] Rendering pool with ${minions.length} minions`);
+
+        if (minions.length === 0) {
+            pool.innerHTML = '<div style="color: var(--text-muted); padding: 20px;">No minions loaded. Check console for errors.</div>';
+            return;
+        }
 
         for (const minion of minions) {
             const card = document.createElement('div');

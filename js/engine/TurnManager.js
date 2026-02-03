@@ -4,6 +4,7 @@ export class TurnManager {
     constructor(gameState) {
         this.gameState = gameState;
         this.turnPhase = 'draw'; // draw, action, end
+        this.onEvent = null; // callback for events
     }
 
     startGame() {
@@ -23,7 +24,11 @@ export class TurnManager {
 
         // draw card except during setup
         if (this.gameState.phase === 'playing') {
-            this.gameState.drawCards(this.gameState.currentPlayer, 1);
+            if (this.gameState.turnNumber === 2 || this.gameState.turnNumber === 3) {
+                this.gameState.drawCards(this.gameState.currentPlayer, 3);
+            } else {
+                this.gameState.drawCards(this.gameState.currentPlayer, 1);
+            }
         }
 
         this.resetMinionStates();
@@ -36,6 +41,16 @@ export class TurnManager {
     }
 
     endTurn() {
+        if (this.gameState.phase === 'setup') {
+            const playerColor = this.gameState.currentPlayer;
+            const hasVillager = Array.from(this.gameState.minionRegistry.values())
+                .some(m => m.id === 'villager' && m.owner === playerColor);
+            if (!hasVillager) {
+                if (typeof alert !== 'undefined') alert('You must place your Villager (King) before ending setup!');
+                return false;
+            }
+        }
+
         // clean up selections before switching
         this.gameState.selectedMinion = null;
         this.gameState.selectedHandCard = null;
@@ -146,10 +161,16 @@ export class TurnManager {
         }
     }
 
-    // tell ui what happened
+    // tell ui or server what happened
     emitEvent(eventName, data) {
-        const event = new CustomEvent(`chegg:${eventName}`, { detail: data });
-        document.dispatchEvent(event);
+        if (this.onEvent) {
+            this.onEvent(eventName, data);
+        }
+        // still support browser events if needed, but safely
+        if (typeof document !== 'undefined') {
+            const event = new CustomEvent(`chegg:${eventName}`, { detail: data });
+            document.dispatchEvent(event);
+        }
     }
 }
 

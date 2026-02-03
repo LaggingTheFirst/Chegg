@@ -207,6 +207,7 @@ export class GameState {
 
     exportBoardState() {
         const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+        // dump board to console
         console.log('=== BOARD EXPORT ===');
 
         // Print header
