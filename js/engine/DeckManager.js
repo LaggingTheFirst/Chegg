@@ -35,7 +35,7 @@ export class DeckManager {
         player.deck = this.shuffle(this.createDeck(deckConfig));
         player.hand = [];
 
-        this.draw(player.deck, player.hand, this.INITIAL_DRAW);
+        //this.draw(player.deck, player.hand, this.INITIAL_DRAW);
     }
 
     static validateDeck(deckConfig) {
