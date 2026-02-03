@@ -15,7 +15,7 @@ export class NetworkClient {
         if (this.socket && this.socket.readyState <= 1) return;
 
         // Use the current host but change protocol to ws://
-        const protocol = window.location.protocol === 'https:' ? 'ws:' : 'ws:';
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//chegg.hydrophobicmc.us:25565`;
 
         console.log('Connecting to WebSocket:', wsUrl);
