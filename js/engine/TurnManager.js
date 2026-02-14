@@ -93,7 +93,7 @@ export class TurnManager {
         if (minion.hasDashed) return false;
 
         // static units
-        const staticMinions = ['cat', 'enderman', 'shulker_box'];
+        const staticMinions = ['cat', 'enderman', 'shulker_box', 'villager'];
         if (staticMinions.includes(minion.id)) return false;
 
         return true;

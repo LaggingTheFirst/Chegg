@@ -11,6 +11,7 @@ import { DeckBuilder } from './ui/DeckBuilder.js';
 import { ModManager } from './mods/ModManager.js';
 import { ModManagerUI } from './ui/ModManagerUI.js';
 import { NetworkClient } from './multiplayer/NetworkClient.js';
+import { AIManager } from './engine/AIManager.js';
 
 class CheggGame {
     constructor() {
@@ -20,6 +21,7 @@ class CheggGame {
         this.abilitySystem = null;
         this.modManager = null;
         this.networkClient = new NetworkClient(this);
+        this.aiManager = null;
 
         // ui stuff
         this.boardUI = null;
@@ -32,6 +34,7 @@ class CheggGame {
 
         // current state
         this.mode = 'idle'; // idle, selectingSpawn, selectingMove, selectingAttack, selectingAbility
+        this.aiEnabled = false;
         this.isOnline = false;
         this.playerColor = 'blue'; // blue by default for local
         this.selectedMinion = null;
@@ -95,6 +98,9 @@ class CheggGame {
                             min-width: 60px;
                         ">${this.networkClient.authManager.elo}</div>
                     </div>
+                    <button class="action-btn secondary" id="btn-vs-ai" style="width: 100%; padding: 12px; border: 1px solid var(--player-red);">
+                        Play vs AI
+                    </button>
                     <button class="action-btn secondary" id="btn-custom-online" style="width: 100%; padding: 12px;">
                         Custom Online Game
                     </button>
@@ -137,6 +143,11 @@ class CheggGame {
 
         overlay.querySelector('#btn-custom-online').addEventListener('click', () => {
             this.showCustomOnlineMenu();
+        });
+
+        overlay.querySelector('#btn-vs-ai').addEventListener('click', () => {
+            overlay.remove();
+            this.startAiGame();
         });
 
         const btnProfile = overlay.querySelector('#btn-profile');
@@ -309,12 +320,22 @@ class CheggGame {
         });
     }
 
+    startAiGame() {
+        this.aiEnabled = true;
+        const defaultDeck = DeckManager.createDefaultDeck(this.minionLoader);
+        this.startGame(defaultDeck, [...defaultDeck]);
+    }
+
     startGame(blueDeck, redDeck, isOnline = false) {
         this.isOnline = isOnline;
         this.gameState = new GameState();
         this.turnManager = new TurnManager(this.gameState);
         this.abilitySystem = new AbilitySystem(this.gameState);
         this.abilitySystem.loadFromModManager(this.modManager);
+
+        if (this.aiEnabled) {
+            this.aiManager = new AIManager(this);
+        }
 
         if (!isOnline) {
             this.playerColor = 'blue';
@@ -468,6 +489,10 @@ class CheggGame {
         this.boardUI.setFlip(flip);
 
         this.render();
+
+        if (this.aiEnabled && this.gameState.currentPlayer === 'red') {
+            this.aiManager.performTurn();
+        }
     }
 
     onTurnEnd(detail) {

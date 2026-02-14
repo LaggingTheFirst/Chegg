@@ -315,11 +315,14 @@ export class MinionLoader {
                             [1, -1], [1, 0], [1, 1]
                         ];
                         for (const [dr, dc] of positions) {
-                            const target = gameState.getMinionAt(row + dr, col + dc);
-                            // dont blow up the kings!
-                            // if (target && target.id !== 'villager') {
-                            //     gameState.removeMinion(target);
-                            // }
+                            const tr = row + dr;
+                            const tc = col + dc;
+                            if (gameState.isValidPosition(tr, tc)) {
+                                const target = gameState.getMinionAt(tr, tc);
+                                if (target) {
+                                    gameState.removeMinion(target);
+                                }
+                            }
                         }
                     };
                     break;
