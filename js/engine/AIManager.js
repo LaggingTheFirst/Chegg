@@ -105,13 +105,7 @@ export class AIManager {
             if (this.game.gameState.phase === 'gameOver') break;
 
             // Skip stationary minions for move evaluation (redundant but safer)
-            if (minion.id === 'villager') {
-                // However, check for attacks if it can attack? 
-                // Rules say "The villager can move and attack in the 8 squares surrounding it"
-                // If movement is disabled, maybe it can still attack?
-                // But the user said "cant move the villager once placed".
-                // I'll keep attack logic for villager just in case it can still whack adjacent tiles.
-            }
+            // Villager can now move and attack in the 8 squares surrounding it
 
             // 1. Check for Attacks
             if (this.game.turnManager.canMinionAttack(minion)) {

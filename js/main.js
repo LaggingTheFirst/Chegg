@@ -768,18 +768,7 @@ class CheggGame {
         }
 
         // Villagers always cost mana to move, others only if theyre dashing
-        let cost = 0;
-        if (isVillager) {
-            if (needsDash) {
-                cost = 2;
-            } else {
-                cost = 1;
-            }
-        } else {
-            if (needsDash) {
-                cost = 1;
-            }
-        }
+        let cost = minionInstance.getMoveCost();
 
         if (cost > 0 && !ManaSystem.spendMana(this.gameState.players[this.gameState.currentPlayer], cost)) {
             this.setHint('Not enough mana');
