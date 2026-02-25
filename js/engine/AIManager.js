@@ -11,31 +11,30 @@ export class AIManager {
     }
 
     async performTurn() {
+        // AI's with less AI this time _IDK wat im doing (👉ﾟヮﾟ)👉
         if (this.game.gameState.currentPlayer !== this.color) return;
 
-        // Small delay at start of turn
+        // give a second to react
         await this.delay(800);
 
-        // 1. Setup Phase if needed
+        // check if we are still in setup mode
         if (this.game.gameState.phase === 'setup') {
             await this.performSetup();
             this.game.endTurn();
             return;
         }
 
-        // 2. Spawn Phase
+        // normal turn sequence
         await this.performSpawns();
-
-        // 3. Action Phase
         await this.performActions();
 
-        // 4. End Turn
+        // wrap it up
         await this.delay(500);
         this.game.endTurn();
     }
 
     async performSetup() {
-        // Find a random spot in spawn zone
+        // find a spot for the king
         const spawnZone = [];
         for (let r = 8; r <= 9; r++) {
             for (let c = 0; c < 8; c++) {
@@ -44,35 +43,35 @@ export class AIManager {
         }
         const pos = spawnZone[Math.floor(Math.random() * spawnZone.length)];
 
-        // Find villager in hand
+        // find the king in our pocket
         const hand = this.game.gameState.players[this.color].hand;
         const villagerIndex = hand.findIndex(c => c.id === 'villager');
 
         if (villagerIndex !== -1) {
-            this.game.handleCardClick(hand[villagerIndex], villagerIndex);
-            await this.delay(500);
-            this.game.handleTileClick(pos.r, pos.c);
+            this.game.performSpawn(villagerIndex, pos.r, pos.c);
             await this.delay(500);
         }
     }
 
     async performSpawns() {
+        // let's build an army
         let player = this.game.gameState.players[this.color];
         let attempts = 0;
 
         while (attempts < 5) {
             attempts++;
             const hand = player.hand;
+            // what can you actually afford?
             const affordable = hand
                 .map((card, index) => ({ card, index }))
-                .filter(item => ManaSystem.canAfford(player, item.card.cost));
+                .filter(item => this.game.gameState.canAfford(item.card.cost));
 
-            if (affordable.length === 0) break;
+            if (affordable.length === 0) break; // too broke
 
-            // Pick a random affordable card
+            // pick something at random (for now...)
             const choice = affordable[Math.floor(Math.random() * affordable.length)];
 
-            // Find a random empty spawn tile
+            // find an empty tile in your backyard
             const spawnTiles = [];
             for (let r = 8; r <= 9; r++) {
                 for (let c = 0; c < 8; c++) {
@@ -82,66 +81,59 @@ export class AIManager {
                 }
             }
 
-            if (spawnTiles.length === 0) break;
+            if (spawnTiles.length === 0) break; // no room left!
 
             const targetPos = spawnTiles[Math.floor(Math.random() * spawnTiles.length)];
 
-            this.game.handleCardClick(choice.card, choice.index);
-            await this.delay(400);
-            this.game.handleTileClick(targetPos.r, targetPos.c);
-            await this.delay(400);
+            // summon them!
+            if (this.game.performSpawn(choice.index, targetPos.r, targetPos.c)) {
+                await this.delay(600);
+            }
 
-            player = this.game.gameState.players[this.color]; // Refresh state
+            player = this.game.gameState.players[this.color]; // refresh local state
         }
     }
 
     async performActions() {
-        const minions = this.game.gameState.getPlayerMinions(this.color);
-
-        // Shuffle minions to make behavior less predictable
-        this.shuffle(minions);
+        // command the troops
+        let minions = this.game.gameState.getPlayerMinions(this.color);
+        this.shuffle(minions); // keep them guessing
 
         for (const minion of minions) {
             if (this.game.gameState.phase === 'gameOver') break;
 
-            // Skip stationary minions for move evaluation (redundant but safer)
-            // Villager can now move and attack in the 8 squares surrounding it
-
-            // 1. Check for Attacks
+            // can you hit anything?
             if (this.game.turnManager.canMinionAttack(minion)) {
-                const config = this.minionLoader.getConfig(minion.id);
-                const minionInstance = this.minionLoader.createSpecializedMinion(minion.id, minion.owner);
-                Object.assign(minionInstance, minion);
+                const instance = this.game.minionLoader.createSpecializedMinion(minion.id, minion.owner);
+                Object.assign(instance, minion);
+                const attacks = instance.getValidAttacks(this.game.gameState);
 
-                const validAttacks = minionInstance.getValidAttacks(this.game.gameState);
-                if (validAttacks.length > 0) {
-                    // Check for lethal
-                    const lethal = validAttacks.find(a => a.minion && a.minion.id === 'villager');
-                    const target = lethal || validAttacks[Math.floor(Math.random() * validAttacks.length)];
+                if (attacks.length > 0) {
+                    // is there a lethal move?
+                    const lethal = attacks.find(a => a.minion && a.minion.id === 'villager');
+                    const target = lethal || attacks[Math.floor(Math.random() * attacks.length)];
 
-                    this.game.handleMinionClick(minion, minion.position.row, minion.position.col);
-                    await this.delay(400);
-                    this.game.handleTileClick(target.row, target.col);
-                    await this.delay(500);
-                    continue; // Skip moving if attacked
+                    if (this.game.performAttack(minion, target.row, target.col)) {
+                        await this.delay(600);
+                        continue; // attacking usually ends your business for this minion
+                    }
                 }
             }
 
-            // 2. Check for Moves
+            // no one to hit? let's move
             if (this.game.turnManager.canMinionMove(minion)) {
-                const config = this.minionLoader.getConfig(minion.id);
-                const minionInstance = this.minionLoader.createSpecializedMinion(minion.id, minion.owner);
-                Object.assign(minionInstance, minion);
+                const instance = this.game.minionLoader.createSpecializedMinion(minion.id, minion.owner);
+                Object.assign(instance, minion);
+                const moves = instance.getValidMoves(this.game.gameState);
 
-                const validMoves = minionInstance.getValidMoves(this.game.gameState);
-                if (validMoves.length > 0) {
-                    // Evaluation: pick move closest to enemy villager
+                if (moves.length > 0) {
+                    // find the enemy king and hunt him down
                     const opponentVillager = this.game.gameState.players[this.opponentColor].villager;
                     let bestMove = null;
                     let minDistance = Infinity;
 
                     if (opponentVillager && opponentVillager.position) {
-                        for (const move of validMoves) {
+                        for (const move of moves) {
                             const dist = Board.getDistance(move.row, move.col, opponentVillager.position.row, opponentVillager.position.col);
                             if (dist < minDistance) {
                                 minDistance = dist;
@@ -149,15 +141,12 @@ export class AIManager {
                             }
                         }
                     } else {
-                        // Just move randomly if no king (shouldn't happen)
-                        bestMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+                        // just wandering around...
+                        bestMove = moves[Math.floor(Math.random() * moves.length)];
                     }
 
-                    if (bestMove) {
-                        this.game.handleMinionClick(minion, minion.position.row, minion.position.col);
-                        await this.delay(400);
-                        this.game.handleTileClick(bestMove.row, bestMove.col);
-                        await this.delay(500);
+                    if (bestMove && this.game.performMove(minion, bestMove.row, bestMove.col)) {
+                        await this.delay(600);
                     }
                 }
             }
@@ -169,6 +158,7 @@ export class AIManager {
     }
 
     shuffle(array) {
+        // mixing the deck
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
@@ -177,4 +167,4 @@ export class AIManager {
 }
 
 export default AIManager;
-// ^_~
+// This should work i think ^_~

@@ -12,7 +12,8 @@ import { ModManager } from './mods/ModManager.js';
 import { ModManagerUI } from './ui/ModManagerUI.js';
 import { NetworkClient } from './multiplayer/NetworkClient.js';
 import { AIManager } from './engine/AIManager.js';
-
+//sorry yh ill have to touch all of this (._.) 
+//if ur confused about why theres a lot of ASCII i like em :3 
 class CheggGame {
     constructor() {
         this.gameState = null;
@@ -638,6 +639,46 @@ class CheggGame {
         }
     }
 
+    performAbility(minion, row, col) {
+        // doing something fancy...
+        if (!this.turnManager.canMinionUseAbility(minion)) {
+            this.setHint('This minion cannot use abilities');
+            return false;
+        }
+
+        const config = this.minionLoader.getConfig(minion.id);
+        const abilityCost = config.abilityCost || 1;
+
+        if (!ManaSystem.canAfford(this.gameState.players[this.gameState.currentPlayer], abilityCost)) {
+            this.setHint('too broke for this move');
+            return false;
+        }
+
+        // is there a valid target?
+        const targets = this.abilitySystem.getValidTargets(minion, this.currentAbility);
+        const validTarget = targets.find(t =>
+            (t.row === row && t.col === col) ||
+            (t.minion && t.minion.position.row === row && t.minion.position.col === col)
+        );
+
+        if (!validTarget) {
+            this.setHint('nothing there to hit');
+            return false;
+        }
+
+        // unleash it!
+        const success = this.abilitySystem.execute(minion, this.currentAbility, validTarget);
+
+        if (success) {
+            ManaSystem.spendMana(this.gameState.players[this.gameState.currentPlayer], abilityCost);
+            minion.hasUsedAbility = true;
+            minion.hasActedThisTurn = true;
+        }
+
+        this.render();
+        return true;
+    }
+
     executeAbility(targetMinion, row, col) {
         if (!this.selectedMinion || !this.currentAbility) return;
 
@@ -653,47 +694,52 @@ class CheggGame {
             return;
         }
 
-        if (!this.turnManager.canMinionUseAbility(minion)) {
-            this.setHint('This minion cannot use abilities');
-            return;
+        if (this.performAbility(minion, row, col)) {
+            this.cancelAction();
+        }
+    }
+
+    performSpawn(cardIndex, row, col) {
+        // trying to bring a new friend to the board
+        const player = this.gameState.currentPlayer;
+        const card = this.gameState.players[player].hand[cardIndex];
+
+        if (!card) return false;
+
+        if (!this.gameState.isSpawnZone(row, player)) {
+            this.setHint('cant spawn in enemy territory');
+            return false;
         }
 
-        const config = this.minionLoader.getConfig(minion.id);
-        const abilityCost = config.abilityCost || 1;
-
-        if (!ManaSystem.canAfford(this.gameState.players[this.gameState.currentPlayer], abilityCost)) {
-            this.setHint('Not enough mana');
-            return;
+        if (this.gameState.getMinionAt(row, col)) {
+            this.setHint('tile is already taken');
+            return false;
         }
 
-        const targets = this.abilitySystem.getValidTargets(minion, this.currentAbility);
-        const validTarget = targets.find(t =>
-            (t.row === row && t.col === col) ||
-            (t.minion && t.minion.position.row === row && t.minion.position.col === col)
-        );
-
-        if (!validTarget) {
-            this.setHint('Invalid target');
-            return;
+        if (!ManaSystem.spendMana(this.gameState.players[player], card.cost)) {
+            this.setHint('not enough mana to summon');
+            return false;
         }
 
-        const success = this.abilitySystem.execute(minion, this.currentAbility, validTarget);
+        // drop them in
+        const minion = this.minionLoader.createSpecializedMinion(card.id, player);
+        this.gameState.placeMinion(minion, row, col);
 
-        if (success) {
-            ManaSystem.spendMana(this.gameState.players[this.gameState.currentPlayer], abilityCost);
-            minion.hasUsedAbility = true;
-            minion.hasActedThisTurn = true;
+        // rip card from hand
+        this.gameState.players[player].hand.splice(cardIndex, 1);
+        if (minion.onSpawn) {
+            minion.onSpawn(this.gameState);
         }
 
-        this.cancelAction();
         this.render();
+        this.boardUI.animateSpawn(row, col);
+        return true;
     }
 
     spawnMinion(row, col) {
         if (!this.selectedCard) return;
 
-        const { card, index } = this.selectedCard;
-        const player = this.gameState.currentPlayer;
+        const { index } = this.selectedCard;
 
         if (this.isOnline) {
             this.networkClient.sendAction('SPAWN_MINION', { cardIndex: index, row, col });
@@ -701,33 +747,63 @@ class CheggGame {
             return;
         }
 
-        if (!this.gameState.isSpawnZone(row, player)) {
-            this.setHint('Must spawn in your spawn zone');
-            return;
+        if (this.performSpawn(index, row, col)) {
+            this.cancelAction();
+        }
+    }
+
+    performMove(minion, row, col) {
+        // time to go for a walk
+        if (!this.turnManager.canMinionMove(minion)) {
+            this.setHint('this one is staying put');
+            return false;
         }
 
-        if (this.gameState.getMinionAt(row, col)) {
-            this.setHint('That tile is occupied');
-            return;
+        const needsDash = minion.hasMoved;
+
+        // build a temporary instance for logic
+        const minionInstance = this.minionLoader.createSpecializedMinion(minion.id, minion.owner);
+        Object.assign(minionInstance, minion);
+        const config = this.minionLoader.getConfig(minion.id);
+        if (config.movement) {
+            minionInstance.movement = config.movement;
         }
 
-        if (!ManaSystem.spendMana(this.gameState.players[player], card.cost)) {
-            this.setHint('Not enough mana');
-            return;
+        // check if this move is actually okay
+        const validMoves = minionInstance.getValidMoves(this.gameState);
+        const isValidMove = validMoves.some(m => m.row === row && m.col === col);
+
+        if (!isValidMove) {
+            return false;
         }
 
-        const minion = this.minionLoader.createSpecializedMinion(card.id, player);
-        this.gameState.placeMinion(minion, row, col);
+        // pay the tax man
+        let cost = minionInstance.getMoveCost();
 
-        // pop card and trigger spawn hooks
-        this.gameState.players[player].hand.splice(index, 1);
-        if (minion.onSpawn) {
-            minion.onSpawn(this.gameState);
+        if (cost > 0 && !ManaSystem.spendMana(this.gameState.players[this.gameState.currentPlayer], cost)) {
+            this.setHint('not enough bits for this move');
+            return false;
         }
 
-        this.cancelAction();
+        const oldPos = { ...minion.position };
+        this.gameState.moveMinion(minion, row, col);
+
+        if (needsDash) {
+            this.turnManager.recordAction(minion, 'dash');
+        } else {
+            minion.hasMoved = true;
+        }
+
+        // bunnies love jumping over things
+        if (minion.id === 'rabbit') {
+            const rabbitAbility = this.abilitySystem.get('drawOnJumpOver');
+            if (rabbitAbility && rabbitAbility.checkTrigger(minion, oldPos, { row, col }, this.gameState)) {
+                rabbitAbility.onTrigger(minion, this.gameState);
+            }
+        }
+
         this.render();
-        this.boardUI.animateSpawn(row, col);
+        return true;
     }
 
     moveMinion(row, col) {
@@ -741,126 +817,89 @@ class CheggGame {
             return;
         }
 
-        if (!this.turnManager.canMinionMove(minion)) {
-            this.setHint('This minion cannot move');
-            return;
-        }
-
-        const needsDash = minion.hasMoved;
-        const isVillager = minion.id === 'villager';
-
-        const minionInstance = this.minionLoader.createSpecializedMinion(minion.id, minion.owner);
-        Object.assign(minionInstance, minion);
-        // Restore fresh movement config
-        const config = this.minionLoader.getConfig(minion.id);
-        if (config.movement) {
-            minionInstance.movement = config.movement;
-        }
-
-        const validMoves = minionInstance.getValidMoves(this.gameState);
-        const isValidMove = validMoves.some(m => m.row === row && m.col === col);
-
-        if (!isValidMove) {
+        if (this.performMove(minion, row, col)) {
+            this.cancelAction();
+        } else if (this.selectedMinion) {
             this.selectedMinion = null;
             this.boardUI.clearHighlights();
             this.boardUI.render();
-            return;
         }
-
-        // Villagers always cost mana to move, others only if theyre dashing
-        let cost = minionInstance.getMoveCost();
-
-        if (cost > 0 && !ManaSystem.spendMana(this.gameState.players[this.gameState.currentPlayer], cost)) {
-            this.setHint('Not enough mana');
-            return;
-        }
-
-        const oldPos = { ...minion.position };
-        this.gameState.moveMinion(minion, row, col);
-
-        if (needsDash) {
-            this.turnManager.recordAction(minion, 'dash');
-        } else {
-            minion.hasMoved = true;
-        }
-
-        // rabbit jump logic
-        if (minion.id === 'rabbit') {
-            const rabbitAbility = this.abilitySystem.get('drawOnJumpOver');
-            if (rabbitAbility && rabbitAbility.checkTrigger(minion, oldPos, { row, col }, this.gameState)) {
-                rabbitAbility.onTrigger(minion, this.gameState);
-            }
-        }
-
-        this.cancelAction();
-        this.render();
     }
 
-    attackMinion(row, col) {
-        if (!this.selectedMinion) return;
-
-        const minion = this.selectedMinion;
-
-        if (this.isOnline) {
-            this.networkClient.sendAction('ATTACK_MINION', { attackerId: minion.instanceId, targetRow: row, toCol: col });
-            this.cancelAction();
-            return;
-        }
-
-        if (!this.turnManager.canMinionAttack(minion)) {
-            this.setHint('This minion cannot attack');
-            return;
+    performAttack(attacker, row, col) {
+        // someone's looking for a fight...
+        if (!this.turnManager.canMinionAttack(attacker)) {
+            this.setHint('this minion cannot attack right now');
+            return false;
         }
 
         const target = this.gameState.getMinionAt(row, col);
-
-        if (!target || target.owner === minion.owner) {
-            this.setHint('Invalid target');
-            return;
+        if (!target || target.owner === attacker.owner) {
+            this.setHint('no friendly fire!');
+            return false;
         }
 
-        const config = this.minionLoader.getConfig(minion.id);
-        const minionInstance = this.minionLoader.createSpecializedMinion(minion.id, minion.owner);
-        Object.assign(minionInstance, minion);
+        const config = this.minionLoader.getConfig(attacker.id);
+        const minionInstance = this.minionLoader.createSpecializedMinion(attacker.id, attacker.owner);
+        Object.assign(minionInstance, attacker);
 
         const validAttacks = minionInstance.getValidAttacks(this.gameState);
         const isValidAttack = validAttacks.some(a => a.row === row && a.col === col);
 
         if (!isValidAttack) {
-            this.setHint('Invalid attack');
-            return;
+            this.setHint('cant reach that target');
+            return false;
         }
 
+        // pay the mana tax
         const cost = config.attackCost || ManaSystem.ATTACK_COST;
         if (!ManaSystem.spendMana(this.gameState.players[this.gameState.currentPlayer], cost)) {
-            this.setHint('Not enough mana');
-            return;
+            this.setHint('too broke to fight');
+            return false;
         }
 
-        if (minion.id === 'creeper' && config.attack && config.attack.selfDestruct) {
-            this.executeCreeper(minion);
-            return;
+        // creepers are special... and explosive
+        if (attacker.id === 'creeper' && config.attack && config.attack.selfDestruct) {
+            this.executeCreeper(attacker);
+            return true;
         }
 
-        this.boardUI.animateAttack(minion.position.row, minion.position.col);
+        this.boardUI.animateAttack(attacker.position.row, attacker.position.col);
         this.boardUI.animateDeath(row, col);
 
-        // wait for animation
+        // wait for the flash of light
         setTimeout(() => {
             this.gameState.removeMinion(target);
-            this.turnManager.recordAction(minion, 'attack');
+            this.turnManager.recordAction(attacker, 'attack');
 
             if (minionInstance.movesToAttack) {
-                this.gameState.moveMinion(minion, row, col);
+                this.gameState.moveMinion(attacker, row, col);
             }
 
             if (this.gameState.phase === 'gameOver') {
-                this.showGameOver();
+                this.showGameOver(); // rip
             }
 
-            this.cancelAction();
             this.render();
         }, 150);
+
+        return true;
+    }
+
+    attackMinion(row, col) {
+        if (!this.selectedMinion) return;
+
+        const attacker = this.selectedMinion;
+
+        if (this.isOnline) {
+            this.networkClient.sendAction('ATTACK_MINION', { attackerId: attacker.instanceId, targetRow: row, toCol: col });
+            this.cancelAction();
+            return;
+        }
+
+        if (this.performAttack(attacker, row, col)) {
+            this.cancelAction();
+        }
     }
 
     executeCreeper(minion) {

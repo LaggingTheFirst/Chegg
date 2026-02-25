@@ -116,6 +116,20 @@ export class GameState {
         return this.board[row][col].minion;
     }
 
+    rehydrateMinion(minion, minionLoader) {
+        // wake up minion ... they're a bit confused
+        if (!minion || !minionLoader) return minion;
+        const config = minionLoader.getConfig(minion.id);
+        if (!config) return minion; // i don't know what this thing is
+
+        // build a fresh body
+        const instance = minionLoader.createSpecializedMinion(minion.id, minion.owner);
+        // stitch the old soul back in
+        Object.assign(instance, minion);
+
+        return instance;
+    }
+
     startTurn() {
         this.turnNumber++;
         const player = this.players[this.currentPlayer];
