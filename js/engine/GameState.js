@@ -93,7 +93,7 @@ export class GameState {
         // rip king -> game over
         if (minion.id === 'villager') {
             this.phase = 'gameOver';
-            this.winner = this.getOpponent();
+            this.winner = minion.owner === 'red' ? 'blue' : 'red';
         }
 
         if (minion.onDeath) {
