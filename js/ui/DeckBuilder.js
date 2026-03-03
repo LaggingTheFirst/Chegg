@@ -1,4 +1,6 @@
 import { DeckManager } from '../engine/DeckManager.js';
+import { loadImageInto } from './UIUtils.js';
+import { createModalOverlay } from './Modal.js';
 
 export class DeckBuilder {
     constructor(minionLoader) {
@@ -14,8 +16,7 @@ export class DeckBuilder {
         this.currentDeck = [];
         this.onComplete = callback;
 
-        this.overlay = document.createElement('div');
-        this.overlay.className = 'modal-overlay active';
+        this.overlay = createModalOverlay();
 
         const modal = document.createElement('div');
         modal.className = 'modal';
@@ -199,14 +200,11 @@ export class DeckBuilder {
 
             const imgContainer = document.createElement('div');
             imgContainer.className = 'card-image';
-            imgContainer.textContent = minion.name.substring(0, 3);
-
-            const img = new Image();
-            img.src = `assets/minions/${minion.image || minion.id + '.png'}`;
-            img.onload = () => {
-                imgContainer.innerHTML = '';
-                imgContainer.appendChild(img);
-            };
+            loadImageInto(
+                imgContainer,
+                `assets/minions/${minion.image || minion.id + '.png'}`,
+                minion.name.substring(0, 3)
+            );
 
             const name = document.createElement('div');
             name.className = 'card-name';
@@ -246,17 +244,11 @@ export class DeckBuilder {
             slot.title = `${minion.name} (${minion.cost}), Click to remove`;
             slot.style.cursor = 'pointer';
 
-            const img = new Image();
-            img.src = `assets/minions/${minion.image || minion.id + '.png'}`;
-            img.onload = () => {
-                slot.innerHTML = '';
-                slot.appendChild(img);
-            };
-            img.onerror = () => {
-                slot.textContent = minion.name.substring(0, 3);
-            };
-
-            slot.textContent = minion.name.substring(0, 3);
+            loadImageInto(
+                slot,
+                `assets/minions/${minion.image || minion.id + '.png'}`,
+                minion.name.substring(0, 3)
+            );
 
             slot.addEventListener('click', () => {
                 this.currentDeck.splice(i, 1);

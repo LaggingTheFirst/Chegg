@@ -2,6 +2,7 @@ import { GameState } from './engine/GameState.js';
 import { TurnManager } from './engine/TurnManager.js';
 import { DeckManager } from './engine/DeckManager.js';
 import { ManaSystem } from './engine/ManaSystem.js';
+import { Board } from './engine/Board.js';
 import { MinionLoader } from './minions/MinionLoader.js';
 import { AbilitySystem } from './minions/AbilitySystem.js';
 import { BoardUI } from './ui/BoardUI.js';
@@ -12,6 +13,7 @@ import { ModManager } from './mods/ModManager.js';
 import { ModManagerUI } from './ui/ModManagerUI.js';
 import { NetworkClient } from './multiplayer/NetworkClient.js';
 import { AIManager } from './engine/AIManager.js';
+import { createModalOverlay } from './ui/Modal.js';
 //sorry yh ill have to touch all of this (._.) 
 //if ur confused about why theres a lot of ASCII i like em :3 
 class CheggGame {
@@ -36,6 +38,7 @@ class CheggGame {
         // current state
         this.mode = 'idle'; // idle, selectingSpawn, selectingMove, selectingAttack, selectingAbility
         this.aiEnabled = false;
+        this.aiDifficulty = this.getSavedAiDifficulty();
         this.isOnline = false;
         this.playerColor = 'blue'; // blue by default for local
         this.selectedMinion = null;
@@ -61,9 +64,8 @@ class CheggGame {
     }
 
     showStartScreen() {
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay active';
-        overlay.id = 'start-screen';
+        const overlay = createModalOverlay({ id: 'start-screen' });
+        const aiDifficulty = this.aiDifficulty;
 
         overlay.innerHTML = `
             <div class="modal" style="text-align: center; max-width: 450px;">
@@ -99,9 +101,16 @@ class CheggGame {
                             min-width: 60px;
                         ">${this.networkClient.authManager.elo}</div>
                     </div>
-                    <button class="action-btn secondary" id="btn-vs-ai" style="width: 100%; padding: 12px; border: 1px solid var(--player-red);">
-                        Play vs AI
-                    </button>
+                    <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+                        <button class="action-btn secondary" id="btn-vs-ai" style="flex: 1; padding: 12px; border: 1px solid var(--player-red);">
+                            Play vs AI
+                        </button>
+                        <select id="ai-difficulty" class="action-btn secondary" style="width: 140px; text-align: left; cursor: pointer; padding: 12px 8px;">
+                            <option value="cautious" ${aiDifficulty === 'cautious' ? 'selected' : ''}>Cautious</option>
+                            <option value="balanced" ${aiDifficulty === 'balanced' ? 'selected' : ''}>Balanced</option>
+                            <option value="aggressive" ${aiDifficulty === 'aggressive' ? 'selected' : ''}>Aggressive</option>
+                        </select>
+                    </div>
                     <button class="action-btn secondary" id="btn-custom-online" style="width: 100%; padding: 12px;">
                         Custom Online Game
                     </button>
@@ -147,8 +156,11 @@ class CheggGame {
         });
 
         overlay.querySelector('#btn-vs-ai').addEventListener('click', () => {
+            const aiDiffEl = overlay.querySelector('#ai-difficulty');
+            const selectedDifficulty = aiDiffEl ? aiDiffEl.value : this.aiDifficulty;
+            this.setAiDifficulty(selectedDifficulty);
             overlay.remove();
-            this.startAiGame();
+            this.startAiGame(selectedDifficulty);
         });
 
         const btnProfile = overlay.querySelector('#btn-profile');
@@ -200,9 +212,7 @@ class CheggGame {
             return;
         }
 
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay active';
-        overlay.id = 'online-menu';
+        const overlay = createModalOverlay({ id: 'online-menu' });
 
         overlay.innerHTML = `
             <div class="modal" style="width: 600px;">
@@ -321,8 +331,9 @@ class CheggGame {
         });
     }
 
-    startAiGame() {
+    startAiGame(difficulty = this.aiDifficulty) {
         this.aiEnabled = true;
+        this.setAiDifficulty(difficulty);
         const defaultDeck = DeckManager.createDefaultDeck(this.minionLoader);
         this.startGame(defaultDeck, [...defaultDeck]);
     }
@@ -335,7 +346,7 @@ class CheggGame {
         this.abilitySystem.loadFromModManager(this.modManager);
 
         if (this.aiEnabled) {
-            this.aiManager = new AIManager(this);
+            this.aiManager = new AIManager(this, { difficulty: this.aiDifficulty });
         }
 
         if (!isOnline) {
@@ -982,9 +993,7 @@ class CheggGame {
         const winner = this.gameState.winner;
         const winnerName = winner === 'blue' ? 'Blue Player' : 'Red Player';
 
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay active';
-        overlay.id = 'game-over-screen';
+        const overlay = createModalOverlay({ id: 'game-over-screen' });
 
         overlay.innerHTML = `
             <div class="modal game-over">
@@ -1009,9 +1018,7 @@ class CheggGame {
 
     selectDeck(onSelected) {
         const savedDecks = DeckManager.getSavedDeckNames();
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay active';
-        overlay.style.zIndex = '3000';
+        const overlay = createModalOverlay({ zIndex: 3000 });
 
         let deckListHtml = '';
         if (savedDecks.length === 0) {
@@ -1096,8 +1103,8 @@ class CheggGame {
 
         // rebuild minion registry
         this.gameState.minionRegistry.clear();
-        for (let r = 0; r < 10; r++) {
-            for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < Board.ROWS; r++) {
+            for (let c = 0; c < Board.COLS; c++) {
                 const m = this.gameState.board[r][c].minion;
                 if (m) {
                     this.gameState.minionRegistry.set(m.instanceId, m);
@@ -1134,9 +1141,7 @@ class CheggGame {
         const myName = this.networkClient.authManager.username;
         const result = (data.blue.username === myName) ? data.blue : data.red;
 
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay active';
-        overlay.style.zIndex = '2000';
+        const overlay = createModalOverlay({ zIndex: 2000 });
 
         const color = result.diff >= 0 ? 'var(--player-blue)' : 'var(--player-red)';
         const sign = result.diff >= 0 ? '+' : '';
@@ -1191,9 +1196,7 @@ class CheggGame {
         const auth = this.networkClient.authManager;
         const creds = auth.getCredentials() || { username: '', token: '' };
 
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay active';
-        overlay.id = 'profile-modal';
+        const overlay = createModalOverlay({ id: 'profile-modal' });
 
         overlay.innerHTML = `
             <div class="modal" style="width: 400px; text-align: center;">
@@ -1265,6 +1268,18 @@ class CheggGame {
 
     isSpectator() {
         return this.playerColor === 'spectator';
+    }
+
+    getSavedAiDifficulty() {
+        const saved = localStorage.getItem('chegg_ai_difficulty');
+        const allowed = new Set(['cautious', 'balanced', 'aggressive']);
+        return allowed.has(saved) ? saved : 'balanced';
+    }
+
+    setAiDifficulty(difficulty) {
+        const allowed = new Set(['cautious', 'balanced', 'aggressive']);
+        this.aiDifficulty = allowed.has(difficulty) ? difficulty : 'balanced';
+        localStorage.setItem('chegg_ai_difficulty', this.aiDifficulty);
     }
 }
 

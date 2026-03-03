@@ -136,9 +136,7 @@ export class MinionBase {
     }
 
     getMoveCost() {
-        if (this.id === 'villager') return ManaSystem.VILLAGER_MOVE_COST;
-        if (this.hasMoved) return ManaSystem.DASH_COST; // Dashing
-        return 0; // Free first move
+        return ManaSystem.getMoveCost(this);
     }
 
     onSpawn(gameState) {

@@ -1,3 +1,6 @@
+import { Board } from './Board.js';
+import { ManaSystem } from './ManaSystem.js';
+
 export class GameState {
     constructor() {
         this.board = this.createEmptyBoard();
@@ -20,24 +23,18 @@ export class GameState {
         // board is 8x10
         // blue @ 0-1, red @ 8-9
         const board = [];
-        for (let row = 0; row < 10; row++) {
+        for (let row = 0; row < Board.ROWS; row++) {
             const rowData = [];
-            for (let col = 0; col < 8; col++) {
+            for (let col = 0; col < Board.COLS; col++) {
                 rowData.push({
                     minion: null,
-                    tileType: this.getTileType(row, col),
+                    tileType: Board.getTileType(row, col),
                     isDark: (row + col) % 2 === 1 // phantoms love these
                 });
             }
             board.push(rowData);
         }
         return board;
-    }
-
-    getTileType(row, col) {
-        if (row <= 1) return 'spawn-blue';
-        if (row >= 8) return 'spawn-red';
-        return 'normal';
     }
 
     createPlayerState(color) {
@@ -102,13 +99,11 @@ export class GameState {
     }
 
     isValidPosition(row, col) {
-        return row >= 0 && row < 10 && col >= 0 && col < 8;
+        return Board.isValidPosition(row, col);
     }
 
     isSpawnZone(row, player) {
-        if (player === 'blue') return row <= 1;
-        if (player === 'red') return row >= 8;
-        return false;
+        return Board.isSpawnZone(row, player);
     }
 
     getMinionAt(row, col) {
@@ -137,11 +132,7 @@ export class GameState {
         // Normal play starts after turn 1
         if (this.turnNumber > 1) {
             this.phase = 'playing';
-            // cap @ 6
-            if (player.maxMana < 6) {
-                player.maxMana++;
-            }
-            player.mana = player.maxMana + player.catBonusMana;
+            ManaSystem.refreshMana(player);
         } else {
             this.phase = 'setup';
             player.mana = 0;
@@ -149,15 +140,7 @@ export class GameState {
         }
 
         // reset everyone
-        this.minionRegistry.forEach(minion => {
-            if (minion.owner === this.currentPlayer) {
-                minion.hasActedThisTurn = false;
-                minion.hasMoved = false;
-                minion.hasDashed = false;
-                minion.hasAttacked = false;
-                minion.justSpawned = false;
-            }
-        });
+        this.resetMinionStatesForPlayer(this.currentPlayer);
     }
 
     endTurn() {
@@ -170,15 +153,11 @@ export class GameState {
 
     spendMana(amount) {
         const player = this.players[this.currentPlayer];
-        if (player.mana >= amount) {
-            player.mana -= amount;
-            return true;
-        }
-        return false;
+        return ManaSystem.spendMana(player, amount);
     }
 
     canAfford(cost) {
-        return this.players[this.currentPlayer].mana >= cost;
+        return ManaSystem.canAfford(this.players[this.currentPlayer], cost);
     }
 
     drawCards(player, count) {
@@ -219,18 +198,31 @@ export class GameState {
         return minions;
     }
 
+    resetMinionStatesForPlayer(player) {
+        this.minionRegistry.forEach(minion => {
+            if (minion.owner === player) {
+                minion.hasActedThisTurn = false;
+                minion.hasMoved = false;
+                minion.hasDashed = false;
+                minion.hasAttacked = false;
+                minion.hasUsedAbility = false;
+                minion.justSpawned = false;
+            }
+        });
+    }
+
     exportBoardState() {
-        const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+        const rows = Array.from({ length: Board.ROWS }, (_, i) => String.fromCharCode(65 + i));
         // dump board to console
         console.log('=== BOARD EXPORT ===');
 
         // Print header
-        console.log('   1 2 3 4 5 6 7 8');
+        console.log(`   ${Array.from({ length: Board.COLS }, (_, i) => i + 1).join(' ')}`);
 
         // Print grid
-        for (let r = 0; r < 10; r++) {
+        for (let r = 0; r < Board.ROWS; r++) {
             let line = `${rows[r]}  `;
-            for (let c = 0; c < 8; c++) {
+            for (let c = 0; c < Board.COLS; c++) {
                 const minion = this.getMinionAt(r, c);
                 if (!minion) {
                     line += '. ';

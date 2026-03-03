@@ -31,7 +31,6 @@ export class TurnManager {
             }
         }
 
-        this.resetMinionStates();
         this.turnPhase = 'action';
 
         this.emitEvent('turnStart', {
@@ -68,19 +67,6 @@ export class TurnManager {
         }
     }
 
-    resetMinionStates() {
-        this.gameState.minionRegistry.forEach(minion => {
-            if (minion.owner === this.gameState.currentPlayer) {
-                minion.hasActedThisTurn = false;
-                minion.hasMoved = false;
-                minion.hasDashed = false;
-                minion.hasAttacked = false;
-                minion.hasUsedAbility = false;
-                minion.justSpawned = false;
-            }
-        });
-    }
-
     canMinionAct(minion) {
         if (minion.justSpawned) return false;
         if (minion.owner !== this.gameState.currentPlayer) return false;
@@ -95,6 +81,11 @@ export class TurnManager {
         // static units
         const staticMinions = ['cat', 'enderman', 'shulker_box'];
         if (staticMinions.includes(minion.id)) return false;
+
+        const moveCost = ManaSystem.getMoveCost(minion);
+        if (!ManaSystem.canAfford(this.gameState.players[this.gameState.currentPlayer], moveCost)) {
+            return false;
+        }
 
         return true;
     }
