@@ -1,3 +1,5 @@
+import { loadImageInto, showTooltip, hideTooltip } from './UIUtils.js';
+
 export class HandUI {
     constructor(gameState, containerSelector, player) {
         this.gameState = gameState;
@@ -79,16 +81,11 @@ export class HandUI {
         const imgContainer = document.createElement('div');
         imgContainer.className = 'card-image';
 
-        const img = new Image();
-        img.src = `assets/minions/${card.image || card.id + '.png'}`;
-        img.onload = () => {
-            imgContainer.innerHTML = '';
-            imgContainer.appendChild(img);
-        };
-        img.onerror = () => {
-            imgContainer.textContent = card.name.substring(0, 3);
-        };
-        imgContainer.textContent = card.name.substring(0, 3);
+        loadImageInto(
+            imgContainer,
+            `assets/minions/${card.image || card.id + '.png'}`,
+            card.name.substring(0, 3)
+        );
 
         const name = document.createElement('div');
         name.className = 'card-name';
@@ -143,30 +140,20 @@ export class HandUI {
     }
 
     showTooltip(card, x, y) {
-        this.hideTooltip();
-
-        const tooltip = document.createElement('div');
-        tooltip.className = 'tooltip';
-        tooltip.id = 'card-tooltip';
-
-        tooltip.innerHTML = `
-            <div class="tooltip-title">${card.name}</div>
-            <div class="tooltip-cost">Cost: ${card.cost} mana</div>
-            <div class="tooltip-description">${card.description || ''}</div>
-        `;
-
-        // float the tooltip above the cursor
-        tooltip.style.left = `${x + 10}px`;
-        tooltip.style.top = `${Math.max(10, y - 100)}px`;
-
-        document.body.appendChild(tooltip);
+        showTooltip({
+            id: 'card-tooltip',
+            title: card.name,
+            cost: card.cost,
+            description: card.description || '',
+            x,
+            y: Math.max(10, y - 100),
+            offsetX: 10,
+            offsetY: 0
+        });
     }
 
     hideTooltip() {
-        const existing = document.getElementById('card-tooltip');
-        if (existing) {
-            existing.remove();
-        }
+        hideTooltip('card-tooltip');
     }
 
     setPlayer(player) {
