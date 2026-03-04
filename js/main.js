@@ -495,9 +495,12 @@ class CheggGame {
         this.currentAbility = null;
         this.boardUI.clearHighlights();
 
-        // Flip board if blue (since blue is row 0-1, normally top)
-        // In online mode, we follow our assigned color
-        const flip = this.isOnline ? (this.networkClient.color === 'blue') : (this.gameState.currentPlayer === 'blue');
+        // In AI mode, keep a fixed player perspective.
+        // In online mode, follow assigned color.
+        // In local hotseat, follow current player.
+        const flip = this.aiEnabled
+            ? (this.playerColor === 'blue')
+            : (this.isOnline ? (this.networkClient.color === 'blue') : (this.gameState.currentPlayer === 'blue'));
         this.boardUI.setFlip(flip);
 
         this.render();
