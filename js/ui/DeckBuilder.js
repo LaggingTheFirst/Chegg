@@ -59,8 +59,7 @@ export class DeckBuilder {
                     </div>
 
                     <div style="margin-top: 15px;">
-                        <select id="deck-load-select" style="width: 100%; padding: 8px; margin-bottom: 8px; background: var(--bg-secondary); border: 1px solid var(--border); color: white;">
-                            <option value="">-- Load Saved Deck --</option>
+                        <select id="deck-load-select" style="width: 100%; padding: 8px; margin-bottom: 8px; background: var(--bg-secondary) !important; border: 1px solid var(--border); color: white !important; appearance: none; -webkit-appearance: none; -moz-appearance: none;">
                         </select>
                         <div style="display: flex; gap: 4px;">
                             <button class="action-btn secondary" id="btn-load" style="flex: 1;">Load Selected</button>
@@ -98,8 +97,8 @@ export class DeckBuilder {
         if (btnSave) {
             btnSave.addEventListener('click', () => {
                 const nameInput = this.overlay.querySelector('#deck-name-input');
-                const name = nameInput ? nameInput.value.trim() : '';
-                if (!name) return alert('Enter a name');
+                let name = nameInput ? nameInput.value.trim() : '';
+                if (!name) name = prompt('Enter a name');
                 DeckManager.saveDeck(name, this.currentDeck);
                 this.updateLoadList();
                 alert('Deck saved!');
