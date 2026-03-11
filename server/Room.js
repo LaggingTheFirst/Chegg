@@ -18,7 +18,6 @@ export class Room {
         };
 
         this.players = []; // { socket, color, deck }
-        this.spectators = []; // [socket]
         this.gameState = new GameState();
         this.turnManager = new TurnManager(this.gameState);
         this.minionLoader = new MinionLoader();
@@ -40,17 +39,6 @@ export class Room {
     addPlayer(socket, color, deck) {
         this.players.push({ socket, color, deck });
         this.send(socket, 'player_assigned', { color });
-    }
-
-    addSpectator(socket) {
-        this.spectators.push(socket);
-        this.send(socket, 'player_assigned', { color: 'spectator' });
-        // Send current state
-        this.send(socket, 'state_update', { state: this.gameState.serialize() });
-        // Send timer if active
-        if (this.timeLeft > 0) {
-            this.send(socket, 'timer_tick', { timeLeft: this.timeLeft });
-        }
     }
 
     isFull() {
@@ -117,7 +105,6 @@ export class Room {
             this.broadcastState();
             if (this.gameState.phase === 'gameOver') {
                 this.stopTimer();
-                this.calculateEloChange(this.gameState.winner);
                 this.saveToDB();
             } else if (type === 'END_TURN') {
                 this.saveToDB(); // save point after each turn
@@ -132,6 +119,7 @@ export class Room {
 
     async saveToDB() {
         if (!this.config.saveGame) return;
+        if (!this.db) return;
         try {
             await this.db.put(`game:${this.id}`, {
                 id: this.id,
@@ -306,50 +294,6 @@ export class Room {
         return success;
     }
 
-    async calculateEloChange(winnerColor) {
-        if (!this.config.isRanked) return;
-
-        const bluePlayer = this.players.find(p => p.color === 'blue');
-        const redPlayer = this.players.find(p => p.color === 'red');
-        if (!bluePlayer || !redPlayer) return;
-
-        const blueName = bluePlayer.socket.username;
-        const redName = redPlayer.socket.username;
-        if (!blueName || !redName) return;
-
-        try {
-            let blueProfile = await this.db.get(`user:${blueName}`);
-            let redProfile = await this.db.get(`user:${redName}`);
-
-            if (typeof blueProfile === 'string') blueProfile = JSON.parse(blueProfile);
-            if (typeof redProfile === 'string') redProfile = JSON.parse(redProfile);
-
-            const ratingA = blueProfile.elo || 1200;
-            const ratingB = redProfile.elo || 1200;
-            const scoreA = winnerColor === 'blue' ? 1 : 0;
-
-            const K = 32; // volatility of the func
-            const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
-            const diff = Math.round(K * (scoreA - expectedA));
-
-            blueProfile.elo = ratingA + diff;
-            redProfile.elo = ratingB - diff;
-
-            await this.db.put(`user:${blueName}`, blueProfile);
-            await this.db.put(`user:${redName}`, redProfile);
-
-            this.broadcast('rating_change', {
-                blue: { username: blueName, oldElo: ratingA, newElo: blueProfile.elo, diff: diff },
-                red: { username: redName, oldElo: ratingB, newElo: redProfile.elo, diff: -diff }
-            });
-
-            console.log(`[ELO] ${blueName} (${ratingA} -> ${blueProfile.elo}) | ${redName} (${ratingB} -> ${redProfile.elo})`);
-
-        } catch (err) {
-            console.error('Elo update error:', err);
-        }
-    }
-
     handleEndTurn() {
         this.turnManager.endTurn();
         this.broadcastState();
@@ -365,7 +309,6 @@ export class Room {
             this.broadcast('game_over', { winner: this.gameState.winner, reason: 'forfeit' });
             this.broadcastState();
             this.stopTimer();
-            this.calculateEloChange(this.gameState.winner);
             this.saveToDB();
         }
     }
@@ -380,7 +323,6 @@ export class Room {
             this.gameState.winner = winner;
             this.broadcast('game_over', { winner });
             this.broadcastState();
-            this.calculateEloChange(winner);
             this.saveToDB();
             this.stopTimer();
         }
@@ -413,7 +355,6 @@ export class Room {
         this.gameState.winner = winner;
         this.broadcast('game_over', { winner, reason: 'timeout' });
         this.broadcastState();
-        this.calculateEloChange(winner);
         this.saveToDB();
     }
 
@@ -431,15 +372,13 @@ export class Room {
     broadcastState() {
         const fullState = JSON.parse(this.gameState.serialize());
 
-        // Add metadata to fullState (for spectators)
+        // Add lightweight metadata to fullState for UI display.
         const metadata = {
             blue: {
-                username: this.players.find(p => p.color === 'blue')?.socket.username || 'Blue Player',
-                elo: this.players.find(p => p.color === 'blue')?.socket.elo || 1200
+                username: this.players.find(p => p.color === 'blue')?.socket.username || 'Blue Player'
             },
             red: {
-                username: this.players.find(p => p.color === 'red')?.socket.username || 'Red Player',
-                elo: this.players.find(p => p.color === 'red')?.socket.elo || 1200
+                username: this.players.find(p => p.color === 'red')?.socket.username || 'Red Player'
             }
         };
         fullState.metadata = metadata;
@@ -456,11 +395,6 @@ export class Room {
 
             this.send(p.socket, 'state_update', { state: JSON.stringify(maskedState) });
         }
-
-        // Broadcast to spectators (full state)
-        for (const s of this.spectators) {
-            this.send(s, 'state_update', { state: JSON.stringify(fullState) });
-        }
     }
 
     send(socket, event, payload) {
@@ -470,9 +404,8 @@ export class Room {
     }
 
     broadcast(event, payload) {
-        const all = [...this.players.map(p => p.socket), ...this.spectators];
-        for (const s of all) {
-            this.send(s, event, payload);
+        for (const p of this.players) {
+            this.send(p.socket, event, payload);
         }
     }
 }

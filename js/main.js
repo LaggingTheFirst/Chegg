@@ -11,7 +11,7 @@ import { InfoPanel } from './ui/InfoPanel.js';
 import { DeckBuilder } from './ui/DeckBuilder.js';
 import { ModManager } from './mods/ModManager.js';
 import { ModManagerUI } from './ui/ModManagerUI.js';
-import { NetworkClient } from './multiplayer/NetworkClient.js';
+import { LanClient } from './multiplayer/LanClient.js';
 import { AIManager } from './engine/AIManager.js';
 import { createModalOverlay } from './ui/Modal.js';
 //sorry yh ill have to touch all of this (._.) 
@@ -23,7 +23,7 @@ class CheggGame {
         this.minionLoader = null;
         this.abilitySystem = null;
         this.modManager = null;
-        this.networkClient = new NetworkClient(this);
+        this.networkClient = new LanClient(this);
         this.aiManager = null;
 
         // ui stuff
@@ -83,24 +83,12 @@ class CheggGame {
                     <button class="action-btn secondary" id="btn-custom-local" style="width: 100%; padding: 12px;">
                         Custom Local Game
                     </button>
-                    <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
-                        <button class="action-btn secondary" id="btn-matchmaking" style="flex: 1; padding: 12px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5);">
-                            Find Online Match
-                        </button>
-                        <div id="lobby-elo-badge" style="
-                            display: ${this.networkClient.authManager.isAuthenticated() ? 'flex' : 'none'};
-                            background: var(--bg-secondary);
-                            border: 1px solid var(--border);
-                            border-radius: 6px;
-                            padding: 0 12px;
-                            height: 42px;
-                            align-items: center;
-                            justify-content: center;
-                            font-weight: 800;
-                            color: var(--mana-color);
-                            min-width: 60px;
-                        ">${this.networkClient.authManager.elo}</div>
-                    </div>
+                    <button class="action-btn secondary" id="btn-host-lan" style="width: 100%; padding: 12px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5);">
+                        Host LAN Game
+                    </button>
+                    <button class="action-btn secondary" id="btn-join-lan" style="width: 100%; padding: 12px;">
+                        Join LAN Game
+                    </button>
                     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
                         <button class="action-btn secondary" id="btn-vs-ai" style="flex: 1; padding: 12px; border: 1px solid var(--player-red);">
                             Play vs AI
@@ -111,12 +99,6 @@ class CheggGame {
                             <option value="aggressive" ${aiDifficulty === 'aggressive' ? 'selected' : ''}>Aggressive</option>
                         </select>
                     </div>
-                    <button class="action-btn secondary" id="btn-custom-online" style="width: 100%; padding: 12px;">
-                        Custom Online Game
-                    </button>
-                    <button class="action-btn secondary" id="btn-profile" style="width: 100%; padding: 12px; background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.5);">
-                        My Profile / Account
-                    </button>
                     <button class="action-btn secondary" id="btn-custom-decks" style="width: 100%; padding: 12px;">
                         Deck Manager
                     </button>
@@ -143,16 +125,12 @@ class CheggGame {
             this.startCustomLocalMatch();
         });
 
-        overlay.querySelector('#btn-matchmaking').addEventListener('click', () => {
-            if (!this.networkClient.authManager.isAuthenticated()) {
-                this.showProfileModal(() => this.startMatchmaking());
-                return;
-            }
-            this.startMatchmaking();
+        overlay.querySelector('#btn-host-lan').addEventListener('click', () => {
+            this.showLanMenu('host');
         });
 
-        overlay.querySelector('#btn-custom-online').addEventListener('click', () => {
-            this.showCustomOnlineMenu();
+        overlay.querySelector('#btn-join-lan').addEventListener('click', () => {
+            this.showLanMenu('join');
         });
 
         overlay.querySelector('#btn-vs-ai').addEventListener('click', () => {
@@ -161,39 +139,6 @@ class CheggGame {
             this.setAiDifficulty(selectedDifficulty);
             overlay.remove();
             this.startAiGame(selectedDifficulty);
-        });
-
-        const btnProfile = overlay.querySelector('#btn-profile');
-        btnProfile.addEventListener('click', () => {
-            this.showProfileModal();
-        });
-
-        // Listen for auth success to update menu rank
-        document.addEventListener('chegg:auth_success', (e) => {
-            const { elo } = e.detail;
-            const badge = overlay.querySelector('#lobby-elo-badge');
-            if (badge) {
-                badge.textContent = elo;
-                badge.style.display = 'flex';
-            }
-            if (btnProfile) {
-                btnProfile.textContent = `Account (${elo} Elo)`;
-            }
-        });
-
-        // Listen for rating changes during/after game
-        document.addEventListener('chegg:rating_change', (e) => {
-            const auth = this.networkClient.authManager;
-            const myName = auth.username;
-            const myData = e.detail.blue.username === myName ? e.detail.blue : e.detail.red;
-
-            const badge = overlay.querySelector('#lobby-elo-badge');
-            if (badge) {
-                badge.textContent = myData.newElo;
-            }
-            if (btnProfile) {
-                btnProfile.textContent = `Account (${myData.newElo} Elo)`;
-            }
         });
 
         overlay.querySelector('#btn-custom-decks').addEventListener('click', () => {
@@ -206,21 +151,22 @@ class CheggGame {
         });
     }
 
-    showCustomOnlineMenu() {
-        if (!this.networkClient.authManager.isAuthenticated()) {
-            this.showProfileModal(() => this.showCustomOnlineMenu());
-            return;
-        }
-
-        const overlay = createModalOverlay({ id: 'online-menu' });
+    showLanMenu(mode = 'join') {
+        const overlay = createModalOverlay({ id: 'lan-menu' });
+        const savedUrl = this.networkClient.serverUrl || '';
 
         overlay.innerHTML = `
             <div class="modal" style="width: 600px;">
-                <div class="modal-title">Custom Online Game</div>
+                <div class="modal-title">LAN Multiplayer</div>
+                
+                <div style="margin-bottom: 14px; display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="lan-server-url" value="${savedUrl}" placeholder="ws://192.168.1.20:1109" class="action-btn secondary" style="flex: 1; text-align: left; cursor: text;">
+                    <button class="action-btn secondary" id="btn-connect-lan" style="white-space: nowrap;">Connect</button>
+                </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                     <div>
-                        <h3 style="margin-bottom: 12px; font-size: 0.9rem;">Create Room</h3>
+                        <h3 style="margin-bottom: 12px; font-size: 0.9rem;">Host Room</h3>
                         <div style="display: flex; flex-direction: column; gap: 10px;">
                             <input type="text" id="room-name" placeholder="Room Name" class="action-btn secondary" style="text-align: left; cursor: text;">
                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -254,7 +200,7 @@ class CheggGame {
 
         const refreshRooms = () => {
             const list = overlay.querySelector('#room-list');
-            this.networkClient.getCustomRooms((rooms) => {
+            this.networkClient.getRooms((rooms) => {
                 list.innerHTML = rooms.length ? '' : '<div style="color: var(--text-muted); font-size: 0.8rem;">No rooms found</div>';
                 rooms.forEach(room => {
                     const roomEl = document.createElement('div');
@@ -265,10 +211,7 @@ class CheggGame {
                             <div style="font-size: 0.85rem; font-weight: 600;">${room.name}</div>
                             <div style="font-size: 0.7rem; color: var(--text-muted);">${room.players}/2 players • ${room.timer}s</div>
                         </div>
-                        <div style="display: flex; gap: 4px;">
-                            ${room.status === 'waiting' ? `<button class="action-btn primary" style="padding: 4px 8px; font-size: 0.7rem;" onclick="window.game.joinRoom('${room.id}')">Join</button>` : ''}
-                            <button class="action-btn secondary" style="padding: 4px 8px; font-size: 0.7rem;" onclick="window.game.spectateRoom('${room.id}')">Spectate</button>
-                        </div>
+                        ${room.status === 'waiting' ? `<button class="action-btn primary" style="padding: 4px 8px; font-size: 0.7rem;" onclick="window.game.joinRoom('${room.id}')">Join</button>` : ''}
                     `;
                     list.appendChild(roomEl);
                 });
@@ -284,24 +227,32 @@ class CheggGame {
             const saveGame = overlay.querySelector('#save-game').checked;
 
             this.selectDeck((deck) => {
-                this.networkClient.createCustomRoom(name, timer, deck, saveGame);
+                this.networkClient.createRoom(name, timer, deck, saveGame);
                 overlay.remove();
             });
         });
+
+        overlay.querySelector('#btn-connect-lan').addEventListener('click', () => {
+            const url = overlay.querySelector('#lan-server-url').value.trim();
+            if (!url) {
+                this.showError('Enter a LAN server URL first.');
+                return;
+            }
+            this.networkClient.connect(url);
+            refreshRooms();
+        });
+
+        if (mode === 'host') {
+            overlay.querySelector('#room-name').focus();
+        }
     }
 
     joinRoom(roomId) {
         this.selectDeck((deck) => {
-            this.networkClient.joinCustomRoom(roomId, deck);
-            const menu = document.getElementById('online-menu');
+            this.networkClient.joinRoom(roomId, deck);
+            const menu = document.getElementById('lan-menu');
             if (menu) menu.remove();
         });
-    }
-
-    spectateRoom(roomId) {
-        this.networkClient.spectateRoom(roomId);
-        const menu = document.getElementById('online-menu');
-        if (menu) menu.remove();
     }
 
     startDeckBuilding() {
@@ -906,7 +857,7 @@ class CheggGame {
         const attacker = this.selectedMinion;
 
         if (this.isOnline) {
-            this.networkClient.sendAction('ATTACK_MINION', { attackerId: attacker.instanceId, targetRow: row, toCol: col });
+            this.networkClient.sendAction('ATTACK_MINION', { attackerId: attacker.instanceId, targetRow: row, targetCol: col });
             this.cancelAction();
             return;
         }
@@ -1069,16 +1020,7 @@ class CheggGame {
     }
 
     startMatchmaking() {
-        this.selectDeck((deck) => {
-            document.getElementById('start-screen').innerHTML = `
-                <div class="modal" style="text-align: center;">
-                    <div class="modal-title">Finding Match...</div>
-                    <div class="preloader-spinner" style="margin: 20px auto;"></div>
-                    <button class="action-btn secondary" onclick="window.location.reload()">Cancel</button>
-                </div>
-            `;
-            this.networkClient.findMatch(deck);
-        });
+        this.showError('Online matchmaking removed (LAN-only build).');
     }
 
 
@@ -1141,30 +1083,7 @@ class CheggGame {
     }
 
     showRatingChange(data) {
-        const myName = this.networkClient.authManager.username;
-        const result = (data.blue.username === myName) ? data.blue : data.red;
-
-        const overlay = createModalOverlay({ zIndex: 2000 });
-
-        const color = result.diff >= 0 ? 'var(--player-blue)' : 'var(--player-red)';
-        const sign = result.diff >= 0 ? '+' : '';
-
-        overlay.innerHTML = `
-            <div class="modal" style="width: 300px; text-align: center; border: 2px solid ${color};">
-                <div class="modal-title">RANK UPDATED</div>
-                <div style="font-size: 2.5rem; font-weight: 800; margin: 20px 0;">
-                    ${result.newElo}
-                </div>
-                <div style="color: ${color}; font-weight: 600; font-size: 1.2rem; margin-bottom: 20px;">
-                    ${sign}${result.diff} Rating
-                </div>
-                <p style="font-size: 0.8rem; color: var(--text-secondary);">
-                    Match: vs ${data.blue.username === myName ? data.red.username : data.blue.username}
-                </p>
-                <button class="action-btn primary" style="width: 100%; margin-top: 20px;" onclick="location.reload()">Return to Menu</button>
-            </div>
-        `;
-        document.body.appendChild(overlay);
+        // Online-only feature removed.
     }
 
     showError(message) {
@@ -1196,8 +1115,9 @@ class CheggGame {
     }
 
     showProfileModal(onComplete) {
-        const auth = this.networkClient.authManager;
-        const creds = auth.getCredentials() || { username: '', token: '' };
+        this.showError('Online profiles removed (LAN-only build).');
+        if (onComplete) onComplete();
+        return; /*
 
         const overlay = createModalOverlay({ id: 'profile-modal' });
 
@@ -1266,11 +1186,11 @@ class CheggGame {
 
             overlay.remove();
             if (onComplete) onComplete();
-        });
+        }); */
     }
 
     isSpectator() {
-        return this.playerColor === 'spectator';
+        return false;
     }
 
     getSavedAiDifficulty() {
