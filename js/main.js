@@ -399,16 +399,23 @@ class CheggGame {
         this.boardUI.render();
         this.bluePanel.render();
         this.redPanel.render();
-        this.currentHand.setPlayer(this.gameState.currentPlayer);
+        const handOwner = this.isOnline ? (this.playerColor || this.gameState.currentPlayer) : this.gameState.currentPlayer;
+        this.currentHand.setPlayer(handOwner);
 
         const indicator = document.getElementById('turn-indicator');
         const turnText = document.getElementById('turn-text');
         const turnNumber = document.getElementById('turn-number');
+        const roomInfo = document.getElementById('room-info');
 
         const currentPlayerName = this.gameState.metadata?.[this.gameState.currentPlayer]?.username || (this.gameState.currentPlayer === 'blue' ? 'Blue' : 'Red');
         if (indicator) indicator.className = `turn-indicator ${this.gameState.currentPlayer}`;
         if (turnText) turnText.textContent = `${currentPlayerName}'s Turn`;
         if (turnNumber) turnNumber.textContent = `Turn ${this.gameState.turnNumber}`;
+        if (roomInfo) {
+            roomInfo.textContent = this.isOnline
+                ? `LAN match • You are ${this.playerColor || 'connecting...'}`
+                : '';
+        }
 
         this.updateActionHint();
     }
@@ -451,7 +458,7 @@ class CheggGame {
         // In local hotseat, follow current player.
         const flip = this.aiEnabled
             ? (this.playerColor === 'blue')
-            : (this.isOnline ? (this.networkClient.color === 'blue') : (this.gameState.currentPlayer === 'blue'));
+            : (this.isOnline ? (this.playerColor === 'blue') : (this.gameState.currentPlayer === 'blue'));
         this.boardUI.setFlip(flip);
 
         this.render();
@@ -1030,8 +1037,8 @@ class CheggGame {
         }
 
         if (!this.gameState) {
+            this.playerColor = this.networkClient.color || this.playerColor;
             this.startGame([], [], true);
-            this.playerColor = this.networkClient.color;
             if (this.playerColor === 'blue') {
                 this.boardUI.setFlip(true);
             }
