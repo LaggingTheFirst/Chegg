@@ -627,7 +627,6 @@ class CheggGame {
         } else if (this.mode === 'selectingMove' && this.selectedMinion) {
             const targetMinion = this.gameState.getMinionAt(row, col);
 
-            // enemy = attack, empty = move
             if (targetMinion && targetMinion.owner !== this.gameState.currentPlayer) {
                 this.attackMinion(row, col);
             } else if (!targetMinion) {
@@ -748,6 +747,10 @@ class CheggGame {
         this.gameState.players[player].hand.splice(cardIndex, 1);
         if (minion.onSpawn) {
             minion.onSpawn(this.gameState);
+        }
+
+        if (this.gameState.phase === 'gameOver') {
+            this.showGameOver();
         }
 
         this.render();
@@ -922,7 +925,7 @@ class CheggGame {
         const attacker = this.selectedMinion;
 
         if (this.isOnline) {
-            this.networkClient.sendAction('ATTACK_MINION', { attackerId: attacker.instanceId, targetRow: row, toCol: col });
+            this.networkClient.sendAction('ATTACK_MINION', { attackerId: attacker.instanceId, targetRow: row, targetCol: col });
             this.cancelAction();
             return;
         }

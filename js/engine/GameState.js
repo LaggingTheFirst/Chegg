@@ -87,8 +87,7 @@ export class GameState {
         this.board[row][col].minion = null;
         this.minionRegistry.delete(minion.instanceId);
 
-        // rip king -> game over
-        if (minion.id === 'villager') {
+        if (minion.id === 'villager' && this.phase !== 'gameOver') {
             this.phase = 'gameOver';
             this.winner = minion.owner === 'red' ? 'blue' : 'red';
         }

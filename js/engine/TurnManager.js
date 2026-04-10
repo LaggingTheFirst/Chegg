@@ -107,7 +107,7 @@ export class TurnManager {
         if (!this.canMinionAct(minion)) return false;
         if (minion.hasAttacked) return false;
         if (minion.hasDashed) return false;
-        if (minion.hasActedThisTurn) return false;
+        if (minion.id === 'enderman' && minion.hasUsedAbility) return false;
 
         const nonAttackers = ['pig', 'rabbit', 'frog', 'cat', 'sniffer'];
         if (nonAttackers.includes(minion.id)) return false;

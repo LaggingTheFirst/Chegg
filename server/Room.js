@@ -252,6 +252,22 @@ export class Room {
             this.logAction(Notation.formatAction(color, 'attack', { from: oldPos, to: { row: payload.targetRow, col: payload.targetCol } }, attackerId));
             this.gameState.removeMinion(target);
             this.turnManager.recordAction(minion, 'attack');
+            
+            if (minion.id === 'wither' && config.attack && config.attack.splash) {
+                const splashPositions = [
+                    { row: -1, col: 0 }, { row: 1, col: 0 },
+                    { row: 0, col: -1 }, { row: 0, col: 1 }
+                ];
+                for (const dir of splashPositions) {
+                    const sr = payload.targetRow + dir.row;
+                    const sc = payload.targetCol + dir.col;
+                    const splashMinion = this.gameState.getMinionAt(sr, sc);
+                    if (splashMinion) {
+                        this.gameState.removeMinion(splashMinion);
+                    }
+                }
+            }
+            
             if (minionInstance.movesToAttack) {
                 this.gameState.moveMinion(minion, payload.targetRow, payload.targetCol);
             }

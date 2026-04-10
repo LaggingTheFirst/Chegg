@@ -56,7 +56,7 @@ export class ManaSystem {
         if (minion.id === 'villager') {
             return this.VILLAGER_MOVE_COST;
         }
-        return this.MOVE_COST;
+        return 0;
     }
 
     static addCatBonus(player) {
