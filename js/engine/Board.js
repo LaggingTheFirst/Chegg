@@ -1,6 +1,10 @@
 export class Board {
     static ROWS = 10;
     static COLS = 8;
+    static SPAWN_ROWS = {
+        blue: [0, 1],
+        red: [8, 9]
+    };
 
     static DIRECTIONS = {
         lateral: [
@@ -38,6 +42,20 @@ export class Board {
             { row: -1, col: 1 }
         ]
     };
+
+    static getSpawnRows(player) {
+        return this.SPAWN_ROWS[player] || [];
+    }
+
+    static isSpawnZone(row, player) {
+        return this.getSpawnRows(player).includes(row);
+    }
+
+    static getTileType(row, col) {
+        if (this.isSpawnZone(row, 'blue')) return 'spawn-blue';
+        if (this.isSpawnZone(row, 'red')) return 'spawn-red';
+        return 'normal';
+    }
 
     static getValidMoves(gameState, startRow, startCol, pattern, range, options = {}) {
         const positions = [];

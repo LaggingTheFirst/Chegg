@@ -1,6 +1,7 @@
 export class ManaSystem {
     static MAX_MANA = 6;
     static STARTING_MANA = 0;
+    static MOVE_COST = 1;
     static ATTACK_COST = 1;
     static DASH_COST = 1;
     static VILLAGER_MOVE_COST = 1;
@@ -49,10 +50,13 @@ export class ManaSystem {
     }
 
     static getMoveCost(minion) {
+        if (minion.hasMoved) {
+            return this.getDashCost(minion);
+        }
         if (minion.id === 'villager') {
             return this.VILLAGER_MOVE_COST;
         }
-        return 0; // free for others
+        return this.MOVE_COST;
     }
 
     static addCatBonus(player) {

@@ -1,3 +1,5 @@
+import { createModalOverlay } from './Modal.js';
+
 export class ModManagerUI {
     constructor(modManager) {
         this.modManager = modManager;
@@ -41,9 +43,7 @@ export class ModManagerUI {
     }
 
     render() {
-        this.overlay = document.createElement('div');
-        this.overlay.className = 'modal-overlay active';
-        this.overlay.style.zIndex = '2000'; // above everything else
+        this.overlay = createModalOverlay({ zIndex: 2000 });
 
         this.overlay.innerHTML = `
             <div class="modal mod-manager-modal" style="width: 600px; max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column;">

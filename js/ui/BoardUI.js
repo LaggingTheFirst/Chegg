@@ -1,3 +1,6 @@
+import { Board } from '../engine/Board.js';
+import { loadImageInto, showTooltip, hideTooltip } from './UIUtils.js';
+
 export class BoardUI {
     constructor(gameState, containerSelector) {
         this.gameState = gameState;
@@ -20,7 +23,7 @@ export class BoardUI {
         topLabels.className = 'board-labels-top';
         // empty corner
         topLabels.appendChild(document.createElement('div'));
-        for (let i = 1; i <= 8; i++) {
+        for (let i = 1; i <= Board.COLS; i++) {
             const lbl = document.createElement('div');
             lbl.className = 'label-cell';
             lbl.textContent = i;
@@ -35,7 +38,7 @@ export class BoardUI {
         // Left labels (A-J)
         const leftLabels = document.createElement('div');
         leftLabels.className = 'board-labels-left';
-        const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+        const rows = Array.from({ length: Board.ROWS }, (_, i) => String.fromCharCode(65 + i));
         for (const r of rows) {
             const lbl = document.createElement('div');
             lbl.className = 'label-cell';
@@ -49,9 +52,9 @@ export class BoardUI {
         this.boardElement.className = 'board';
 
         // 10x8 grid
-        for (let row = 0; row < 10; row++) {
+        for (let row = 0; row < Board.ROWS; row++) {
             this.tiles[row] = [];
-            for (let col = 0; col < 8; col++) {
+            for (let col = 0; col < Board.COLS; col++) {
                 const tile = this.createTile(row, col);
                 this.tiles[row][col] = tile;
                 this.boardElement.appendChild(tile);
@@ -77,9 +80,9 @@ export class BoardUI {
         }
 
         // spawn zone shades
-        if (row <= 1) {
+        if (Board.isSpawnZone(row, 'blue')) {
             tile.classList.add('blue-spawn');
-        } else if (row >= 8) {
+        } else if (Board.isSpawnZone(row, 'red')) {
             tile.classList.add('red-spawn');
         }
 
@@ -104,8 +107,8 @@ export class BoardUI {
 
     render() {
         // wipe & redraw
-        for (let row = 0; row < 10; row++) {
-            for (let col = 0; col < 8; col++) {
+        for (let row = 0; row < Board.ROWS; row++) {
+            for (let col = 0; col < Board.COLS; col++) {
                 const tile = this.tiles[row][col];
                 const minionEl = tile.querySelector('.minion');
                 if (minionEl) {
@@ -149,24 +152,14 @@ export class BoardUI {
 
         // load sprite, fallback to initials
         const imgPath = `assets/minions/${minion.image || minion.id + '.png'}`;
-        const img = new Image();
-        img.src = imgPath;
-        img.onload = () => {
-            minionEl.innerHTML = '';
-            minionEl.appendChild(img);
-        };
-        img.onerror = () => {
-            minionEl.innerHTML = `<div class="minion-placeholder">${minion.name.substring(0, 3)}</div>`;
-        };
-
-        minionEl.innerHTML = `<div class="minion-placeholder">${minion.name.substring(0, 3)}</div>`;
+        loadImageInto(minionEl, imgPath, minion.name.substring(0, 3), 'minion-placeholder');
 
         tile.appendChild(minionEl);
     }
 
     clearHighlights() {
-        for (let row = 0; row < 10; row++) {
-            for (let col = 0; col < 8; col++) {
+        for (let row = 0; row < Board.ROWS; row++) {
+            for (let col = 0; col < Board.COLS; col++) {
                 const tile = this.tiles[row][col];
                 tile.classList.remove(
                     'highlight-move',
@@ -222,10 +215,9 @@ export class BoardUI {
     }
 
     highlightSpawnZone(player) {
-        for (let row = 0; row < 10; row++) {
-            for (let col = 0; col < 8; col++) {
-                const inZone = (player === 'blue' && row <= 1) ||
-                    (player === 'red' && row >= 8);
+        for (let row = 0; row < Board.ROWS; row++) {
+            for (let col = 0; col < Board.COLS; col++) {
+                const inZone = Board.isSpawnZone(row, player);
                 if (inZone && !this.gameState.getMinionAt(row, col)) {
                     this.tiles[row][col].classList.add('highlight-move');
                 }
@@ -271,31 +263,21 @@ export class BoardUI {
 
 
     showTooltip(minion, x, y) {
-        this.hideTooltip();
-
-        const tooltip = document.createElement('div');
-        tooltip.className = 'tooltip';
-        tooltip.id = 'minion-tooltip';
-
         const config = minion.config || minion;
-
-        tooltip.innerHTML = `
-            <div class="tooltip-title">${minion.name}</div>
-            <div class="tooltip-cost">Cost: ${minion.cost} mana</div>
-            <div class="tooltip-description">${config.description || ''}</div>
-        `;
-
-        tooltip.style.left = `${x + 10}px`;
-        tooltip.style.top = `${y + 10}px`;
-
-        document.body.appendChild(tooltip);
+        showTooltip({
+            id: 'minion-tooltip',
+            title: minion.name,
+            cost: minion.cost,
+            description: config.description || '',
+            x,
+            y,
+            offsetX: 10,
+            offsetY: 10
+        });
     }
 
     hideTooltip() {
-        const existing = document.getElementById('minion-tooltip');
-        if (existing) {
-            existing.remove();
-        }
+        hideTooltip('minion-tooltip');
     }
 }
 
