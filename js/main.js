@@ -531,7 +531,9 @@ class CheggGame {
         this.currentHand.selectCard(index);
         this.mode = 'selectingSpawn';
 
-        this.boardUI.highlightSpawnZone(this.gameState.currentPlayer);
+        const config = this.minionLoader.getConfig(card.id);
+        const onlyDarkTiles = config.onlyDarkTiles || false;
+        this.boardUI.highlightSpawnZone(this.gameState.currentPlayer, onlyDarkTiles);
         this.updateActionHint();
     }
 
@@ -714,7 +716,6 @@ class CheggGame {
     }
 
     performSpawn(cardIndex, row, col) {
-        // trying to bring a new friend to the board
         const player = this.gameState.currentPlayer;
         const card = this.gameState.players[player].hand[cardIndex];
 
@@ -730,16 +731,20 @@ class CheggGame {
             return false;
         }
 
+        const config = this.minionLoader.getConfig(card.id);
+        if (config.onlyDarkTiles && !this.gameState.board[row][col].isDark) {
+            this.setHint('can only spawn on dark tiles');
+            return false;
+        }
+
         if (!ManaSystem.spendMana(this.gameState.players[player], card.cost)) {
             this.setHint('not enough mana to summon');
             return false;
         }
 
-        // drop them in
         const minion = this.minionLoader.createSpecializedMinion(card.id, player);
         this.gameState.placeMinion(minion, row, col);
 
-        // rip card from hand
         this.gameState.players[player].hand.splice(cardIndex, 1);
         if (minion.onSpawn) {
             minion.onSpawn(this.gameState);
@@ -841,7 +846,6 @@ class CheggGame {
     }
 
     performAttack(attacker, row, col) {
-        // someone's looking for a fight...
         if (!this.turnManager.canMinionAttack(attacker)) {
             this.setHint('this minion cannot attack right now');
             return false;
@@ -865,14 +869,12 @@ class CheggGame {
             return false;
         }
 
-        // pay the mana tax
         const cost = config.attackCost || ManaSystem.ATTACK_COST;
         if (!ManaSystem.spendMana(this.gameState.players[this.gameState.currentPlayer], cost)) {
             this.setHint('too broke to fight');
             return false;
         }
 
-        // creepers are special... and explosive
         if (attacker.id === 'creeper' && config.attack && config.attack.selfDestruct) {
             this.executeCreeper(attacker);
             return true;
@@ -881,17 +883,31 @@ class CheggGame {
         this.boardUI.animateAttack(attacker.position.row, attacker.position.col);
         this.boardUI.animateDeath(row, col);
 
-        // wait for the flash of light
         setTimeout(() => {
             this.gameState.removeMinion(target);
             this.turnManager.recordAction(attacker, 'attack');
+
+            if (attacker.id === 'wither' && config.attack && config.attack.splash) {
+                const splashTargets = [];
+                for (const dir of Board.DIRECTIONS.lateral) {
+                    const sr = row + dir.row;
+                    const sc = col + dir.col;
+                    const splashMinion = this.gameState.getMinionAt(sr, sc);
+                    if (splashMinion) {
+                        splashTargets.push(splashMinion);
+                    }
+                }
+                for (const splashMinion of splashTargets) {
+                    this.gameState.removeMinion(splashMinion);
+                }
+            }
 
             if (minionInstance.movesToAttack) {
                 this.gameState.moveMinion(attacker, row, col);
             }
 
             if (this.gameState.phase === 'gameOver') {
-                this.showGameOver(); // rip
+                this.showGameOver();
             }
 
             this.render();

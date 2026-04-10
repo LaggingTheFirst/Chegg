@@ -214,12 +214,15 @@ export class BoardUI {
         this.tiles[row][col].classList.add('highlight-selected');
     }
 
-    highlightSpawnZone(player) {
+    highlightSpawnZone(player, onlyDarkTiles = false) {
         for (let row = 0; row < Board.ROWS; row++) {
             for (let col = 0; col < Board.COLS; col++) {
                 const inZone = Board.isSpawnZone(row, player);
+                const isDark = this.gameState.board[row][col].isDark;
                 if (inZone && !this.gameState.getMinionAt(row, col)) {
-                    this.tiles[row][col].classList.add('highlight-move');
+                    if (!onlyDarkTiles || isDark) {
+                        this.tiles[row][col].classList.add('highlight-move');
+                    }
                 }
             }
         }

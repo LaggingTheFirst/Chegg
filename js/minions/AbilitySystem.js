@@ -30,7 +30,10 @@ export class AbilitySystem {
                 const { row: r1, col: c1 } = minion.position;
                 const { row: r2, col: c2, minion: targetMinion } = target;
 
-                // swap 'em
+                if (targetMinion.id === 'villager') {
+                    return false;
+                }
+
                 gameState.board[r1][c1].minion = targetMinion;
                 gameState.board[r2][c2].minion = minion;
 
@@ -84,7 +87,7 @@ export class AbilitySystem {
                 const sources = [];
                 const { row, col } = minion.position;
 
-                for (const dir of Board.DIRECTIONS.lateral) {
+                for (const dir of Board.DIRECTIONS.surrounding) {
                     const r = row + dir.row;
                     const c = col + dir.col;
                     const adjacent = gameState.getMinionAt(r, c);
