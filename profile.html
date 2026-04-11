@@ -310,7 +310,7 @@
             document.getElementById('profileContent').style.display = 'none';
 
             try {
-                const response = await fetch(`http://localhost:1109/api/player/${encodeURIComponent(username)}`);
+                const response = await fetch(`http://slideshow-word-brilliant-boutique.trycloudflare.com/api/player/${encodeURIComponent(username)}`);
                 const data = await response.json();
 
                 if (!data.success) {
@@ -359,7 +359,7 @@
             const historyDiv = document.getElementById('matchHistory');
             
             try {
-                const response = await fetch(`http://localhost:1109/api/player/${encodeURIComponent(username)}/matches`);
+                const response = await fetch(`http://slideshow-word-brilliant-boutique.trycloudflare.com/api/player/${encodeURIComponent(username)}/matches`);
                 const data = await response.json();
 
                 if (!data.success) {

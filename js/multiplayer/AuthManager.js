@@ -2,7 +2,7 @@ export class AuthManager {
     constructor() {
         this.username = localStorage.getItem('chegg_username') || null;
         this.token = localStorage.getItem('chegg_token') || null;
-        this.elo = localStorage.getItem('chegg_elo') || 1200;
+        this.elo = localStorage.getItem('chegg_elo') || 400;
     }
 
     isAuthenticated() {

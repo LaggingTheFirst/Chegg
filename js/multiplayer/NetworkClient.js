@@ -14,9 +14,12 @@ export class NetworkClient {
     connect() {
         if (this.socket && this.socket.readyState <= 1) return;
 
+        let ip = "slideshow-word-brilliant-boutique.trycloudflare.com";
+        const port = 80;
+
         // Use the current host but change protocol to ws://
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//172.17.80.1:1109`;
+        const wsUrl = `${protocol}//${ip}:${port}`;
 
         console.log('Connecting to WebSocket:', wsUrl);
         this.socket = new WebSocket(wsUrl);

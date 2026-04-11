@@ -271,7 +271,7 @@
 
         async function loadLeaderboard() {
             try {
-                const response = await fetch('http://localhost:1109/api/leaderboard?limit=100');
+                const response = await fetch('http://slideshow-word-brilliant-boutique.trycloudflare.com/api/leaderboard?limit=100');
                 const data = await response.json();
                 
                 if (!data.success) {
