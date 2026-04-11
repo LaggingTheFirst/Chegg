@@ -180,9 +180,12 @@ class CheggGame {
             window.location.href = 'leaderboard.html';
         });
 
-        overlay.querySelector('#btn-admin').addEventListener('click', () => {
-            window.location.href = 'admin.html';
-        });
+        const btnAdmin = overlay.querySelector('#btn-admin');
+        if (btnAdmin) {
+            btnAdmin.addEventListener('click', () => {
+                window.location.href = 'admin.html';
+            });
+        }
 
         document.addEventListener('chegg:auth_success', (e) => {
             const { elo } = e.detail;
