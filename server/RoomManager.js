@@ -81,7 +81,7 @@ export class RoomManager {
                 userData = {
                     username,
                     token,
-                    elo: 1200,
+                    elo: 400,
                     created: Date.now()
                 };
                 await this.db.put(`user:${username}`, JSON.stringify(userData));

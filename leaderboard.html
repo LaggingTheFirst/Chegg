@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chegg Leaderboard</title>
+    <link rel="icon" type="image/png" href="egg.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #fbbf24;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(251,191,36,0.3);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #fbbf24;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: rgba(251,191,36,0.2);
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            color: #fbbf24;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(251,191,36,0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(251,191,36,0.2);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #9ca3af;
+            margin-top: 5px;
+        }
+
+        .table-container {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(251,191,36,0.2);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(251,191,36,0.1);
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            color: #fbbf24;
+            font-weight: bold;
+            border-bottom: 2px solid rgba(251,191,36,0.3);
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .rank-cell {
+            font-weight: bold;
+            color: #fbbf24;
+        }
+
+        .rank-cell.top-3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rank-cell.top-3 img {
+            width: 24px;
+            height: 24px;
+            image-rendering: pixelated;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+            font-size: 1.2em;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ef4444;
+            font-size: 1.2em;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: rgba(156,163,175,0.2);
+            border: 2px solid #9ca3af;
+            border-radius: 8px;
+            color: #9ca3af;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(156,163,175,0.3);
+            transform: translateY(-2px);
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rank-badge img {
+            width: 24px;
+            height: 24px;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">To Game</a>
+        
+        <h1><image src="assets/leaderboard/2_gold/ornate.png" width="32px"> Leaderboard</h1>
+        <div class="subtitle">Top Players by ELO Rating</div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalPlayers">-</div>
+                <div class="stat-label">Total Players</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgElo">-</div>
+                <div class="stat-label">Average ELO</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="topElo">-</div>
+                <div class="stat-label">Highest ELO</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search by username...">
+            <button class="btn" onclick="loadLeaderboard()">Refresh</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Username</th>
+                        <th>Tier</th>
+                        <th>ELO</th>
+                        <th>Wins</th>
+                        <th>Losses</th>
+                        <th>Win Rate</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <tr>
+                        <td colspan="7" class="loading">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { RankSystem } from './js/ui/RankSystem.js';
+
+        const rankSystem = new RankSystem();
+        let allPlayers = [];
+        let searchTimeout = null;
+
+        async function init() {
+            await rankSystem.load();
+            console.log('RankSystem loaded:', rankSystem.loaded);
+            await loadLeaderboard();
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('http://localhost:1109/api/leaderboard?limit=100');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load leaderboard');
+                }
+                
+                allPlayers = data.players;
+                updateStats(data);
+                renderLeaderboard(allPlayers);
+            } catch (err) {
+                console.error('Error loading leaderboard:', err);
+                document.getElementById('leaderboardBody').innerHTML = 
+                    '<tr><td colspan="7" class="error">Failed to load leaderboard. Make sure the server is running on port 1109.</td></tr>';
+            }
+        }
+
+        function updateStats(data) {
+            const players = data.players || [];
+            const totalPlayers = data.total || 0;
+            
+            document.getElementById('totalPlayers').textContent = totalPlayers;
+            
+            if (players.length > 0) {
+                const avgElo = players.reduce((sum, p) => sum + p.elo, 0) / players.length;
+                document.getElementById('avgElo').textContent = Math.round(avgElo);
+                document.getElementById('topElo').textContent = players[0].elo;
+            } else {
+                document.getElementById('avgElo').textContent = 0;
+                document.getElementById('topElo').textContent = 0;
+            }
+        }
+
+        function renderLeaderboard(players) {
+            const tbody = document.getElementById('leaderboardBody');
+            
+            if (players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="loading">No players found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            players.forEach((player, index) => {
+                const tr = document.createElement('tr');
+                
+                const globalRank = allPlayers.findIndex(p => p.username === player.username) + 1;
+                
+                const rankTd = document.createElement('td');
+                rankTd.className = 'rank-cell';
+                rankTd.textContent = '#' + globalRank;
+                tr.appendChild(rankTd);
+                
+                const usernameTd = document.createElement('td');
+                const usernameLink = document.createElement('a');
+                usernameLink.href = `/profile?username=${encodeURIComponent(player.username)}`;
+                usernameLink.textContent = player.username;
+                usernameLink.style.color = '#e0e0e0';
+                usernameLink.style.textDecoration = 'none';
+                usernameLink.style.transition = 'color 0.3s';
+                usernameLink.onmouseover = () => usernameLink.style.color = '#fbbf24';
+                usernameLink.onmouseout = () => usernameLink.style.color = '#e0e0e0';
+                usernameTd.appendChild(usernameLink);
+                tr.appendChild(usernameTd);
+                
+                const tierTd = document.createElement('td');
+                if (rankSystem.loaded) {
+                    if (globalRank <= 3) {
+                        const eyeBadge = document.createElement('div');
+                        eyeBadge.className = 'rank-badge';
+                        eyeBadge.style.display = 'inline-flex';
+                        eyeBadge.style.alignItems = 'center';
+                        eyeBadge.style.gap = '8px';
+                        
+                        const eyeImg = document.createElement('img');
+                        eyeImg.src = 'assets/leaderboard/eye.png';
+                        eyeImg.alt = 'The Eye';
+                        eyeImg.style.width = '24px';
+                        eyeImg.style.height = '24px';
+                        eyeImg.style.imageRendering = 'pixelated';
+                        eyeBadge.appendChild(eyeImg);
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = 'The Eye';
+                        nameSpan.style.color = '#a855f7';
+                        nameSpan.style.fontWeight = 'bold';
+                        eyeBadge.appendChild(nameSpan);
+                        
+                        tierTd.appendChild(eyeBadge);
+                    } else {
+                        const rankHTML = rankSystem.getRankHTML(player.elo, { size: 24 });
+                        tierTd.innerHTML = rankHTML;
+                    }
+                } else {
+                    tierTd.textContent = '-';
+                }
+                tr.appendChild(tierTd);
+                
+                const eloTd = document.createElement('td');
+                eloTd.textContent = player.elo;
+                tr.appendChild(eloTd);
+                
+                const winsTd = document.createElement('td');
+                winsTd.textContent = player.wins || 0;
+                tr.appendChild(winsTd);
+                
+                const lossesTd = document.createElement('td');
+                lossesTd.textContent = player.losses || 0;
+                tr.appendChild(lossesTd);
+                
+                const totalGames = (player.wins || 0) + (player.losses || 0);
+                const winRate = totalGames > 0 ? ((player.wins || 0) / totalGames * 100).toFixed(1) : '0.0';
+                const winRateTd = document.createElement('td');
+                winRateTd.textContent = winRate + '%';
+                tr.appendChild(winRateTd);
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = e.target.value.toLowerCase().trim();
+                
+                if (query === '') {
+                    renderLeaderboard(allPlayers);
+                } else {
+                    const filtered = allPlayers.filter(p => 
+                        p.username.toLowerCase().includes(query)
+                    );
+                    renderLeaderboard(filtered);
+                }
+            }, 300);
+        });
+
+        window.loadLeaderboard = loadLeaderboard;
+
+        init();
+    </script>
+</body>
+</html>

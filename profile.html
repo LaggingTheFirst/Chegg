@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chegg - Player Profile</title>
+    <link rel="icon" type="image/png" href="egg.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: rgba(156,163,175,0.2);
+            border: 2px solid #9ca3af;
+            border-radius: 8px;
+            color: #9ca3af;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(156,163,175,0.3);
+            transform: translateY(-2px);
+        }
+
+        .profile-header {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(251,191,36,0.2);
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .profile-rank {
+            flex-shrink: 0;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-username {
+            font-size: 2.5em;
+            color: #fbbf24;
+            margin-bottom: 10px;
+        }
+
+        .profile-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(251,191,36,0.2);
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #9ca3af;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+
+        .section {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(251,191,36,0.2);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #fbbf24;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(251,191,36,0.2);
+        }
+
+        .match-history {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .match-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(251,191,36,0.1);
+            border-radius: 6px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .match-card:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(251,191,36,0.3);
+        }
+
+        .match-card.win {
+            border-left: 4px solid #22c55e;
+        }
+
+        .match-card.loss {
+            border-left: 4px solid #ef4444;
+        }
+
+        .match-info {
+            flex: 1;
+        }
+
+        .match-opponent {
+            font-size: 1.2em;
+            color: #e0e0e0;
+            margin-bottom: 5px;
+        }
+
+        .match-details {
+            color: #9ca3af;
+            font-size: 0.9em;
+        }
+
+        .match-result {
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 6px;
+        }
+
+        .match-result.win {
+            color: #22c55e;
+            background: rgba(34,197,94,0.1);
+        }
+
+        .match-result.loss {
+            color: #ef4444;
+            background: rgba(239,68,68,0.1);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+            font-size: 1.2em;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ef4444;
+            font-size: 1.2em;
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rank-badge img {
+            width: 64px;
+            height: 64px;
+            image-rendering: pixelated;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(251,191,36,0.3);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            margin-bottom: 20px;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #fbbf24;
+            background: rgba(255,255,255,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="leaderboard" class="back-btn">Back to Leaderboard</a>
+        
+        <input type="text" id="usernameSearch" class="search-box" placeholder="Enter username to view profile...">
+
+        <div id="profileContent" style="display: none;">
+            <div class="profile-header">
+                <div class="profile-rank" id="profileRank"></div>
+                <div class="profile-info">
+                    <div class="profile-username" id="profileUsername">-</div>
+                    <div class="profile-stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="statElo">-</div>
+                            <div class="stat-label">ELO Rating</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statRank">-</div>
+                            <div class="stat-label">Global Rank</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statWins">-</div>
+                            <div class="stat-label">Wins</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statLosses">-</div>
+                            <div class="stat-label">Losses</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statWinRate">-</div>
+                            <div class="stat-label">Win Rate</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="statGames">-</div>
+                            <div class="stat-label">Total Games</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Match History</div>
+                <div class="match-history" id="matchHistory">
+                    <div class="loading">Loading match history...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingMessage" class="loading">Enter a username to view their profile</div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import { RankSystem } from './js/ui/RankSystem.js';
+
+        const rankSystem = new RankSystem();
+        let searchTimeout = null;
+
+        async function init() {
+            await rankSystem.load();
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const username = urlParams.get('username');
+            
+            if (username) {
+                document.getElementById('usernameSearch').value = username;
+                await loadProfile(username);
+            }
+        }
+
+        document.getElementById('usernameSearch').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const username = e.target.value.trim();
+                if (username) {
+                    loadProfile(username);
+                    history.pushState(null, '', `?username=${encodeURIComponent(username)}`);
+                } else {
+                    document.getElementById('profileContent').style.display = 'none';
+                    document.getElementById('loadingMessage').style.display = 'block';
+                    document.getElementById('errorMessage').style.display = 'none';
+                }
+            }, 500);
+        });
+
+        async function loadProfile(username) {
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('profileContent').style.display = 'none';
+
+            try {
+                const response = await fetch(`http://localhost:1109/api/player/${encodeURIComponent(username)}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Player not found');
+                }
+
+                displayProfile(data.player);
+                await loadMatchHistory(username);
+
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('profileContent').style.display = 'block';
+            } catch (err) {
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('errorMessage').textContent = err.message;
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        function displayProfile(player) {
+            document.getElementById('profileUsername').textContent = player.username;
+            document.getElementById('statElo').textContent = player.elo;
+            document.getElementById('statRank').textContent = '#' + player.rank;
+            document.getElementById('statWins').textContent = player.wins;
+            document.getElementById('statLosses').textContent = player.losses;
+            document.getElementById('statGames').textContent = player.games;
+
+            const winRate = player.games > 0 ? ((player.wins / player.games) * 100).toFixed(1) : '0.0';
+            document.getElementById('statWinRate').textContent = winRate + '%';
+
+            const rankDiv = document.getElementById('profileRank');
+            if (rankSystem.loaded) {
+                if (player.rank <= 3) {
+                    rankDiv.innerHTML = `
+                        <div class="rank-badge">
+                            <img src="assets/leaderboard/eye.png" alt="The End" style="width: 64px; height: 64px;">
+                        </div>
+                    `;
+                } else {
+                    const rankHTML = rankSystem.getRankHTML(player.elo, { size: 64, showName: false });
+                    rankDiv.innerHTML = rankHTML;
+                }
+            }
+        }
+
+        async function loadMatchHistory(username) {
+            const historyDiv = document.getElementById('matchHistory');
+            
+            try {
+                const response = await fetch(`http://localhost:1109/api/player/${encodeURIComponent(username)}/matches`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load match history');
+                }
+
+                if (data.matches.length === 0) {
+                    historyDiv.innerHTML = '<div class="loading">No matches found</div>';
+                    return;
+                }
+
+                historyDiv.innerHTML = '';
+                
+                data.matches.forEach(match => {
+                    const matchCard = document.createElement('div');
+                    matchCard.className = `match-card ${match.result}`;
+
+                    const matchInfo = document.createElement('div');
+                    matchInfo.className = 'match-info';
+
+                    const opponent = document.createElement('div');
+                    opponent.className = 'match-opponent';
+                    opponent.textContent = `vs ${match.opponent}`;
+                    matchInfo.appendChild(opponent);
+
+                    const details = document.createElement('div');
+                    details.className = 'match-details';
+                    const date = new Date(match.timestamp);
+                    details.textContent = `${match.turns} turns • ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                    matchInfo.appendChild(details);
+
+                    const result = document.createElement('div');
+                    result.className = `match-result ${match.result}`;
+                    result.textContent = match.result === 'win' ? 'WIN' : 'LOSS';
+
+                    matchCard.appendChild(matchInfo);
+                    matchCard.appendChild(result);
+
+                    historyDiv.appendChild(matchCard);
+                });
+            } catch (err) {
+                historyDiv.innerHTML = `<div class="error">Failed to load match history: ${err.message}</div>`;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chegg Admin</title>
+    <link rel="icon" type="image/png" href="egg.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ef4444;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(239,68,68,0.3);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #ef4444;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: rgba(239,68,68,0.2);
+            border: 2px solid #ef4444;
+            border-radius: 8px;
+            color: #ef4444;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: rgba(239,68,68,0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-success {
+            background: rgba(34,197,94,0.2);
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+
+        .btn-success:hover {
+            background: rgba(34,197,94,0.3);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.9em;
+        }
+
+        .btn-danger {
+            background: rgba(239,68,68,0.2);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239,68,68,0.4);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(239,68,68,0.2);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #9ca3af;
+            margin-top: 5px;
+        }
+
+        .table-container {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(239,68,68,0.2);
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(239,68,68,0.1);
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            color: #ef4444;
+            font-weight: bold;
+            border-bottom: 2px solid rgba(239,68,68,0.3);
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+            font-size: 1.2em;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ef4444;
+            font-size: 1.2em;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: rgba(156,163,175,0.2);
+            border: 2px solid #9ca3af;
+            border-radius: 8px;
+            color: #9ca3af;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(156,163,175,0.3);
+            transform: translateY(-2px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            border: 2px solid #ef4444;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-title {
+            color: #ef4444;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            color: #9ca3af;
+            margin-bottom: 5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(239,68,68,0.3);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #ef4444;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .warning {
+            background: rgba(251,191,36,0.1);
+            border: 2px solid rgba(251,191,36,0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">To Game</a>
+        
+        <h1>Admin Panel</h1>
+        <div class="subtitle">Player Database Management</div>
+
+        <div class="warning">
+            ⚠️ Warning: nuh uh
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalPlayers">-</div>
+                <div class="stat-label">Total Players</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgElo">-</div>
+                <div class="stat-label">Average ELO</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalGames">-</div>
+                <div class="stat-label">Total Games</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search by username...">
+            <button class="btn" onclick="loadPlayers()">Refresh</button>
+            <button class="btn btn-success" onclick="showCreateModal()">Create Player</button>
+            <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+            <button class="btn" onclick="debugKeys()" style="background: rgba(59,130,246,0.2); border-color: #3b82f6; color: #3b82f6;">Debug Keys</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>ELO</th>
+                        <th>Wins</th>
+                        <th>Losses</th>
+                        <th>Games</th>
+                        <th>Win Rate</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="playersBody">
+                    <tr>
+                        <td colspan="7" class="loading">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Edit Player</div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="editUsername" class="form-input" readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">ELO</label>
+                <input type="number" id="editElo" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Wins</label>
+                <input type="number" id="editWins" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Losses</label>
+                <input type="number" id="editLosses" class="form-input">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" onclick="savePlayer()">Save</button>
+                <button class="btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Create Player</div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="createUsername" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">ELO</label>
+                <input type="number" id="createElo" class="form-input" value="1200">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Wins</label>
+                <input type="number" id="createWins" class="form-input" value="0">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Losses</label>
+                <input type="number" id="createLosses" class="form-input" value="0">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" onclick="createPlayer()">Create</button>
+                <button class="btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Delete Player</div>
+            <p style="color: #9ca3af; margin-bottom: 20px;">
+                Are you sure you want to delete player <strong id="deleteUsername" style="color: #ef4444;"></strong>?
+                This action cannot be undone.
+            </p>
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+                <button class="btn" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loginModal" class="modal active">
+        <div class="modal-content">
+            <div class="modal-title">🔒 Admin Authentication</div>
+            <p style="color: #9ca3af; margin-bottom: 20px;">
+                Enter the admin password to access the panel.
+            </p>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="adminPassword" class="form-input" placeholder="Enter admin password">
+            </div>
+            <div id="loginError" style="color: #ef4444; margin-top: 10px; display: none;"></div>
+            <div class="modal-actions">
+                <button class="btn btn-success" onclick="authenticate()">Login</button>
+                <a href="index.html" class="btn">Cancel</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        let allPlayers = [];
+        let searchTimeout = null;
+        let currentPlayer = null;
+        let authToken = null;
+
+        document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                authenticate();
+            }
+        });
+
+        async function authenticate() {
+            const password = document.getElementById('adminPassword').value;
+            const loginError = document.getElementById('loginError');
+            
+            try {
+                const response = await fetch('http://localhost:1109/api/admin/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    loginError.textContent = data.error || 'Authentication failed';
+                    loginError.style.display = 'block';
+                    return;
+                }
+                
+                authToken = data.token;
+                sessionStorage.setItem('adminToken', authToken);
+                document.getElementById('loginModal').classList.remove('active');
+                await loadPlayers();
+            } catch (err) {
+                loginError.textContent = 'Connection error. Make sure the server is running.';
+                loginError.style.display = 'block';
+            }
+        }
+
+        function checkAuth() {
+            const token = sessionStorage.getItem('adminToken');
+            if (token) {
+                authToken = token;
+                document.getElementById('loginModal').classList.remove('active');
+                return true;
+            }
+            return false;
+        }
+
+        async function loadPlayers() {
+            if (!authToken) {
+                window.location.reload();
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:1109/api/admin/players', {
+                    headers: { 'Authorization': 'Bearer ' + authToken }
+                });
+                const data = await response.json();
+                
+                if (!data.success) {
+                    if (response.status === 401 || response.status === 403) {
+                        sessionStorage.removeItem('adminToken');
+                        window.location.reload();
+                        return;
+                    }
+                    throw new Error(data.error || 'Failed to load players');
+                }
+                
+                allPlayers = data.players;
+                updateStats(data);
+                renderPlayers(allPlayers);
+            } catch (err) {
+                console.error('Error loading players:', err);
+                document.getElementById('playersBody').innerHTML = 
+                    '<tr><td colspan="7" class="error">Failed to load players. Make sure the server is running.</td></tr>';
+            }
+        }
+
+        function updateStats(data) {
+            const players = data.players || [];
+            
+            document.getElementById('totalPlayers').textContent = players.length;
+            
+            if (players.length > 0) {
+                const avgElo = players.reduce((sum, p) => sum + p.elo, 0) / players.length;
+                document.getElementById('avgElo').textContent = Math.round(avgElo);
+                
+                const totalGames = players.reduce((sum, p) => sum + (p.wins || 0) + (p.losses || 0), 0);
+                document.getElementById('totalGames').textContent = totalGames;
+            } else {
+                document.getElementById('avgElo').textContent = 0;
+                document.getElementById('totalGames').textContent = 0;
+            }
+        }
+
+        function renderPlayers(players) {
+            const tbody = document.getElementById('playersBody');
+            
+            if (players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="loading">No players found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            players.forEach(player => {
+                const tr = document.createElement('tr');
+                
+                const usernameTd = document.createElement('td');
+                usernameTd.textContent = player.username;
+                tr.appendChild(usernameTd);
+                
+                const eloTd = document.createElement('td');
+                eloTd.textContent = player.elo;
+                tr.appendChild(eloTd);
+                
+                const winsTd = document.createElement('td');
+                winsTd.textContent = player.wins || 0;
+                tr.appendChild(winsTd);
+                
+                const lossesTd = document.createElement('td');
+                lossesTd.textContent = player.losses || 0;
+                tr.appendChild(lossesTd);
+                
+                const gamesTd = document.createElement('td');
+                gamesTd.textContent = (player.wins || 0) + (player.losses || 0);
+                tr.appendChild(gamesTd);
+                
+                const totalGames = (player.wins || 0) + (player.losses || 0);
+                const winRate = totalGames > 0 ? ((player.wins || 0) / totalGames * 100).toFixed(1) : '0.0';
+                const winRateTd = document.createElement('td');
+                winRateTd.textContent = winRate + '%';
+                tr.appendChild(winRateTd);
+                
+                const actionsTd = document.createElement('td');
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'actions';
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn btn-small btn-success';
+                editBtn.textContent = 'Edit';
+                editBtn.onclick = () => showEditModal(player);
+                actionsDiv.appendChild(editBtn);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-small btn-danger';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = () => showDeleteModal(player);
+                actionsDiv.appendChild(deleteBtn);
+                
+                actionsTd.appendChild(actionsDiv);
+                tr.appendChild(actionsTd);
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        function showEditModal(player) {
+            currentPlayer = player;
+            document.getElementById('editUsername').value = player.username;
+            document.getElementById('editElo').value = player.elo;
+            document.getElementById('editWins').value = player.wins || 0;
+            document.getElementById('editLosses').value = player.losses || 0;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function showCreateModal() {
+            document.getElementById('createUsername').value = '';
+            document.getElementById('createElo').value = 1200;
+            document.getElementById('createWins').value = 0;
+            document.getElementById('createLosses').value = 0;
+            document.getElementById('createModal').classList.add('active');
+        }
+
+        function showDeleteModal(player) {
+            currentPlayer = player;
+            document.getElementById('deleteUsername').textContent = player.username;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.remove('active');
+            document.getElementById('createModal').classList.remove('active');
+            document.getElementById('deleteModal').classList.remove('active');
+            currentPlayer = null;
+        }
+
+        async function savePlayer() {
+            const elo = parseInt(document.getElementById('editElo').value);
+            const wins = parseInt(document.getElementById('editWins').value);
+            const losses = parseInt(document.getElementById('editLosses').value);
+            
+            try {
+                const response = await fetch('http://localhost:1109/api/admin/player/' + currentPlayer.username, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({ elo, wins, losses })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    if (response.status === 401 || response.status === 403) {
+                        sessionStorage.removeItem('adminToken');
+                        window.location.reload();
+                        return;
+                    }
+                    throw new Error(data.error || 'Failed to update player');
+                }
+                
+                closeModal();
+                await loadPlayers();
+            } catch (err) {
+                alert('Error updating player: ' + err.message);
+            }
+        }
+
+        async function createPlayer() {
+            const username = document.getElementById('createUsername').value.trim();
+            const elo = parseInt(document.getElementById('createElo').value);
+            const wins = parseInt(document.getElementById('createWins').value);
+            const losses = parseInt(document.getElementById('createLosses').value);
+            
+            if (!username) {
+                alert('Username is required');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:1109/api/admin/player', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({ username, elo, wins, losses })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    if (response.status === 401 || response.status === 403) {
+                        sessionStorage.removeItem('adminToken');
+                        window.location.reload();
+                        return;
+                    }
+                    throw new Error(data.error || 'Failed to create player');
+                }
+                
+                closeModal();
+                await loadPlayers();
+            } catch (err) {
+                alert('Error creating player: ' + err.message);
+            }
+        }
+
+        async function confirmDelete() {
+            try {
+                const response = await fetch('http://localhost:1109/api/admin/player/' + currentPlayer.username, {
+                    method: 'DELETE',
+                    headers: { 
+                        'Authorization': 'Bearer ' + authToken
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    if (response.status === 401 || response.status === 403) {
+                        sessionStorage.removeItem('adminToken');
+                        window.location.reload();
+                        return;
+                    }
+                    throw new Error(data.error || 'Failed to delete player');
+                }
+                
+                closeModal();
+                await loadPlayers();
+            } catch (err) {
+                alert('Error deleting player: ' + err.message);
+            }
+        }
+
+        async function clearAllData() {
+            if (!confirm('⚠️ WARNING: This will delete ALL players from the database. This action cannot be undone. Are you sure?')) {
+                return;
+            }
+            
+            if (!confirm('Are you REALLY sure? This will permanently delete all player data.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:1109/api/admin/clear-all', {
+                    method: 'DELETE',
+                    headers: { 
+                        'Authorization': 'Bearer ' + authToken
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    if (response.status === 401 || response.status === 403) {
+                        sessionStorage.removeItem('adminToken');
+                        window.location.reload();
+                        return;
+                    }
+                    throw new Error(data.error || 'Failed to clear data');
+                }
+                
+                alert('All player data has been cleared.');
+                await loadPlayers();
+            } catch (err) {
+                alert('Error clearing data: ' + err.message);
+            }
+        }
+
+        async function debugKeys() {
+            try {
+                const response = await fetch('http://localhost:1109/api/admin/debug-keys', {
+                    headers: { 
+                        'Authorization': 'Bearer ' + authToken
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to fetch debug keys');
+                }
+                
+                console.log('=== DATABASE KEYS DEBUG ===');
+                console.log('Total keys:', data.count);
+                console.table(data.keys);
+                alert(`Found ${data.count} keys in database. Check console for details.`);
+            } catch (err) {
+                alert('Error fetching debug keys: ' + err.message);
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = e.target.value.toLowerCase().trim();
+                
+                if (query === '') {
+                    renderPlayers(allPlayers);
+                } else {
+                    const filtered = allPlayers.filter(p => 
+                        p.username.toLowerCase().includes(query)
+                    );
+                    renderPlayers(filtered);
+                }
+            }, 300);
+        });
+
+        window.loadPlayers = loadPlayers;
+        window.showEditModal = showEditModal;
+        window.showCreateModal = showCreateModal;
+        window.showDeleteModal = showDeleteModal;
+        window.closeModal = closeModal;
+        window.savePlayer = savePlayer;
+        window.createPlayer = createPlayer;
+        window.confirmDelete = confirmDelete;
+        window.authenticate = authenticate;
+        window.clearAllData = clearAllData;
+        window.debugKeys = debugKeys;
+
+        if (checkAuth()) {
+            loadPlayers();
+        }
+    </script>
+</body>
+</html>

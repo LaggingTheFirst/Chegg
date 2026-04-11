@@ -340,16 +340,21 @@ export class Room {
             if (typeof blueProfile === 'string') blueProfile = JSON.parse(blueProfile);
             if (typeof redProfile === 'string') redProfile = JSON.parse(redProfile);
 
-            const ratingA = blueProfile.elo || 1200;
-            const ratingB = redProfile.elo || 1200;
+            const ratingA = blueProfile.elo || 400;
+            const ratingB = redProfile.elo || 400;
             const scoreA = winnerColor === 'blue' ? 1 : 0;
 
-            const K = 32; // volatility of the func
+            const K = 32;
             const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
             const diff = Math.round(K * (scoreA - expectedA));
 
             blueProfile.elo = ratingA + diff;
             redProfile.elo = ratingB - diff;
+            
+            blueProfile.wins = (blueProfile.wins || 0) + (winnerColor === 'blue' ? 1 : 0);
+            blueProfile.losses = (blueProfile.losses || 0) + (winnerColor === 'blue' ? 0 : 1);
+            redProfile.wins = (redProfile.wins || 0) + (winnerColor === 'red' ? 1 : 0);
+            redProfile.losses = (redProfile.losses || 0) + (winnerColor === 'red' ? 0 : 1);
 
             await this.db.put(`user:${blueName}`, blueProfile);
             await this.db.put(`user:${redName}`, redProfile);
@@ -451,11 +456,11 @@ export class Room {
         const metadata = {
             blue: {
                 username: this.players.find(p => p.color === 'blue')?.socket.username || 'Blue Player',
-                elo: this.players.find(p => p.color === 'blue')?.socket.elo || 1200
+                elo: this.players.find(p => p.color === 'blue')?.socket.elo || 400
             },
             red: {
                 username: this.players.find(p => p.color === 'red')?.socket.username || 'Red Player',
-                elo: this.players.find(p => p.color === 'red')?.socket.elo || 1200
+                elo: this.players.find(p => p.color === 'red')?.socket.elo || 400
             }
         };
         fullState.metadata = metadata;

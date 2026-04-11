@@ -1,0 +1,141 @@
+{
+  "ranks": [
+    {
+      "tier": "Iron",
+      "color": "#9ca3af",
+      "subdivisions": [
+        {
+          "name": "Iron I",
+          "minElo": 0,
+          "maxElo": 400,
+          "image": "assets/leaderboard/1_iron/ore.png"
+        },
+        {
+          "name": "Iron II",
+          "minElo": 400,
+          "maxElo": 799,
+          "image": "assets/leaderboard/1_iron/block.png"
+        },
+        {
+          "name": "Iron III",
+          "minElo": 800,
+          "maxElo": 1199,
+          "image": "assets/leaderboard/1_iron/ornate.png"
+        }
+      ]
+    },
+    {
+      "tier": "Gold",
+      "color": "#fbbf24",
+      "subdivisions": [
+        {
+          "name": "Gold I",
+          "minElo": 1200,
+          "maxElo": 1399,
+          "image": "assets/leaderboard/2_gold/ore.png"
+        },
+        {
+          "name": "Gold II",
+          "minElo": 1400,
+          "maxElo": 1599,
+          "image": "assets/leaderboard/2_gold/block.png"
+        },
+        {
+          "name": "Gold III",
+          "minElo": 1600,
+          "maxElo": 1799,
+          "image": "assets/leaderboard/2_gold/ornate.png"
+        }
+      ]
+    },
+    {
+      "tier": "Diamond",
+      "color": "#3b82f6",
+      "subdivisions": [
+        {
+          "name": "Diamond I",
+          "minElo": 1800,
+          "maxElo": 1999,
+          "image": "assets/leaderboard/3_diamond/ore.png"
+        },
+        {
+          "name": "Diamond II",
+          "minElo": 2000,
+          "maxElo": 2199,
+          "image": "assets/leaderboard/3_diamond/block.png"
+        },
+        {
+          "name": "Diamond III",
+          "minElo": 2200,
+          "maxElo": 2399,
+          "image": "assets/leaderboard/3_diamond/ornate.png"
+        }
+      ]
+    },
+    {
+      "tier": "Redstone",
+      "color": "#ef4444",
+      "subdivisions": [
+        {
+          "name": "Redstone I",
+          "minElo": 2400,
+          "maxElo": 2599,
+          "image": "assets/leaderboard/4_redstone/ore.png"
+        },
+        {
+          "name": "Redstone II",
+          "minElo": 2600,
+          "maxElo": 2799,
+          "image": "assets/leaderboard/4_redstone/block.png"
+        },
+        {
+          "name": "Redstone III",
+          "minElo": 2800,
+          "maxElo": 2999,
+          "image": "assets/leaderboard/4_redstone/ornate.png"
+        }
+      ]
+    },
+    {
+      "tier": "Netherite",
+      "color": "#8b5cf6",
+      "subdivisions": [
+        {
+          "name": "Netherite I",
+          "minElo": 3000,
+          "maxElo": 3299,
+          "image": "assets/leaderboard/5_netherite/ore.png"
+        },
+        {
+          "name": "Netherite II",
+          "minElo": 3300,
+          "maxElo": 3599,
+          "image": "assets/leaderboard/5_netherite/block.png"
+        },
+        {
+          "name": "Netherite III",
+          "minElo": 3600,
+          "maxElo": 3999,
+          "image": "assets/leaderboard/5_netherite/ornate.png"
+        }
+      ]
+    },
+    {
+      "tier": "The End",
+      "color": "#2f5b5a",
+      "subdivisions": [
+        {
+            "name": "The End",
+            "minElo": 4000,
+            "maxElo": 9999,
+            "image": "assets/leaderboard/end.png"
+        }
+      ]
+    }
+  ],
+  "displaySettings": {
+    "imageSize": 32,
+    "showRankName": true,
+    "showTierOnly": false
+  }
+}

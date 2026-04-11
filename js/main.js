@@ -14,6 +14,7 @@ import { ModManagerUI } from './ui/ModManagerUI.js';
 import { NetworkClient } from './multiplayer/NetworkClient.js';
 import { AIManager } from './engine/AIManager.js';
 import { createModalOverlay } from './ui/Modal.js';
+import { RankSystem } from './ui/RankSystem.js';
 //sorry yh ill have to touch all of this (._.) 
 //if ur confused about why theres a lot of ASCII i like em :3 
 class CheggGame {
@@ -52,6 +53,10 @@ class CheggGame {
         this.minionLoader = new MinionLoader();
         this.modManager = new ModManager();
         this.modManagerUI = new ModManagerUI(this.modManager);
+        this.rankSystem = new RankSystem();
+
+        await this.rankSystem.load();
+        console.log('[RankSystem] Loaded rank configuration');
 
         // load externals via mod manager
         await this.modManager.loadAll();
@@ -117,6 +122,9 @@ class CheggGame {
                     <button class="action-btn secondary" id="btn-profile" style="width: 100%; padding: 12px; background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.5);">
                         My Profile / Account
                     </button>
+                    <button class="action-btn secondary" id="btn-leaderboard" style="width: 100%; padding: 12px; background: rgba(234, 179, 8, 0.2); border: 1px solid rgba(234, 179, 8, 0.5);">
+                        🏆 Leaderboard
+                    </button>
                     <button class="action-btn secondary" id="btn-custom-decks" style="width: 100%; padding: 12px;">
                         Deck Manager
                     </button>
@@ -168,7 +176,14 @@ class CheggGame {
             this.showProfileModal();
         });
 
-        // Listen for auth success to update menu rank
+        overlay.querySelector('#btn-leaderboard').addEventListener('click', () => {
+            window.location.href = 'leaderboard.html';
+        });
+
+        overlay.querySelector('#btn-admin').addEventListener('click', () => {
+            window.location.href = 'admin.html';
+        });
+
         document.addEventListener('chegg:auth_success', (e) => {
             const { elo } = e.detail;
             const badge = overlay.querySelector('#lobby-elo-badge');
