@@ -438,7 +438,7 @@
             const loginError = document.getElementById('loginError');
             
             try {
-                const response = await fetch('http://slideshow-word-brilliant-boutique.trycloudflare.com/api/admin/auth', {
+                const response = await fetch('https://recommended-guy-detroit-our.trycloudflare.com/api/admin/auth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ password })
@@ -479,7 +479,7 @@
             }
             
             try {
-                const response = await fetch('http://slideshow-word-brilliant-boutique.trycloudflare.com/api/admin/players', {
+                const response = await fetch('https://recommended-guy-detroit-our.trycloudflare.com/api/admin/players', {
                     headers: { 'Authorization': 'Bearer ' + authToken }
                 });
                 const data = await response.json();
@@ -618,7 +618,7 @@
             const losses = parseInt(document.getElementById('editLosses').value);
             
             try {
-                const response = await fetch('http://slideshow-word-brilliant-boutique.trycloudflare.com/api/admin/player/' + currentPlayer.username, {
+                const response = await fetch('https://recommended-guy-detroit-our.trycloudflare.com/api/admin/player/' + currentPlayer.username, {
                     method: 'PUT',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -657,7 +657,7 @@
             }
             
             try {
-                const response = await fetch('http://slideshow-word-brilliant-boutique.trycloudflare.com/api/admin/player', {
+                const response = await fetch('https://recommended-guy-detroit-our.trycloudflare.com/api/admin/player', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -686,7 +686,7 @@
 
         async function confirmDelete() {
             try {
-                const response = await fetch('http://slideshow-word-brilliant-boutique.trycloudflare.com/api/admin/player/' + currentPlayer.username, {
+                const response = await fetch('https://recommended-guy-detroit-our.trycloudflare.com/api/admin/player/' + currentPlayer.username, {
                     method: 'DELETE',
                     headers: { 
                         'Authorization': 'Bearer ' + authToken
@@ -721,7 +721,7 @@
             }
             
             try {
-                const response = await fetch('http://slideshow-word-brilliant-boutique.trycloudflare.com/api/admin/clear-all', {
+                const response = await fetch('https://recommended-guy-detroit-our.trycloudflare.com/api/admin/clear-all', {
                     method: 'DELETE',
                     headers: { 
                         'Authorization': 'Bearer ' + authToken
@@ -748,7 +748,7 @@
 
         async function debugKeys() {
             try {
-                const response = await fetch('http://slideshow-word-brilliant-boutique.trycloudflare.com/api/admin/debug-keys', {
+                const response = await fetch('https://recommended-guy-detroit-our.trycloudflare.com/api/admin/debug-keys', {
                     headers: { 
                         'Authorization': 'Bearer ' + authToken
                     }
