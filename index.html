@@ -3,9 +3,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="description"
         content="CHEGG - A turn-based deck-building strategy game. Build your deck, spawn minions, and defeat your opponent's Villager!">
+    <meta name="theme-color" content="#0a0e1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <title>CHEGG</title>
 
@@ -35,51 +38,69 @@
         .preloader {
             position: fixed;
             inset: 0;
-            background: #0a0a0f;
+            background: linear-gradient(135deg, #0a0e1a 0%, #141824 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.5s ease, transform 0.5s ease;
         }
 
         .preloader.hidden {
             opacity: 0;
+            transform: scale(1.1);
             pointer-events: none;
         }
 
         .preloader-logo {
-            font-size: 4rem;
+            font-size: clamp(2.5rem, 10vw, 4rem);
             font-weight: 800;
-            background: #9ca3af;
+            background: linear-gradient(135deg, #8b5cf6, #3b82f6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            letter-spacing: 4px;
-            animation: pulse 1.5s infinite;
+            letter-spacing: 6px;
+            animation: pulse-logo 2s infinite;
+            text-shadow: 0 0 40px rgba(139, 92, 246, 0.5);
+        }
+
+        @keyframes pulse-logo {
+            0%, 100% { 
+                transform: scale(1);
+                filter: brightness(1);
+            }
+            50% { 
+                transform: scale(1.05);
+                filter: brightness(1.2);
+            }
         }
 
         .preloader-text {
-            color: #9ca3af;
-            margin-top: 20px;
-            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-top: 24px;
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            font-weight: 500;
+            letter-spacing: 1px;
         }
 
         .preloader-spinner {
-            width: 40px;
-            height: 40px;
-            margin-top: 30px;
-            border: 3px solid #374151;
-            border-top-color: #6366f1;
+            width: 48px;
+            height: 48px;
+            margin-top: 32px;
+            border: 4px solid #2a3142;
+            border-top-color: #8b5cf6;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>

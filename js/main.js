@@ -82,32 +82,14 @@ class CheggGame {
                 </div>
                 
                 <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <button class="action-btn primary" id="btn-quick-start" style="width: 100%; padding: 12px;">
-                        Quick Start (Local Decks)
+                    <button class="action-btn primary" id="btn-custom-local" style="width: 100%; padding: 12px;">
+                        Play Local Game
                     </button>
-                    <button class="action-btn secondary" id="btn-custom-local" style="width: 100%; padding: 12px;">
-                        Custom Local Game
+                    <button class="action-btn primary" id="btn-matchmaking" style="width: 100%; padding: 12px;">
+                        Find Online Match
                     </button>
-                    <div style="display: flex; gap: 4px; align-items: center; width: 100%;">
-                        <button class="action-btn secondary" id="btn-matchmaking" style="flex: 1; padding: 12px; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.5);">
-                            Find Online Match
-                        </button>
-                        <div id="lobby-elo-badge" style="
-                            display: ${this.networkClient.authManager.isAuthenticated() ? 'flex' : 'none'};
-                            background: var(--bg-secondary);
-                            border: 1px solid var(--border);
-                            border-radius: 6px;
-                            padding: 0 12px;
-                            height: 42px;
-                            align-items: center;
-                            justify-content: center;
-                            font-weight: 800;
-                            color: var(--mana-color);
-                            min-width: 60px;
-                        ">${this.networkClient.authManager.elo}</div>
-                    </div>
                     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-                        <button class="action-btn secondary" id="btn-vs-ai" style="flex: 1; padding: 12px; border: 1px solid var(--player-red);">
+                        <button class="action-btn primary" id="btn-vs-ai" style="flex: 1; padding: 12px;">
                             Play vs AI
                         </button>
                         <select id="ai-difficulty" class="action-btn secondary" style="width: 140px; text-align: left; cursor: pointer; padding: 12px 8px;">
@@ -119,16 +101,16 @@ class CheggGame {
                     <button class="action-btn secondary" id="btn-custom-online" style="width: 100%; padding: 12px;">
                         Custom Online Game
                     </button>
-                    <button class="action-btn secondary" id="btn-profile" style="width: 100%; padding: 12px; background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.5);">
-                        My Profile / Account
+                    <button class="action-btn secondary" id="btn-profile" style="width: 100%; padding: 12px;">
+                        My Profile
                     </button>
-                    <button class="action-btn secondary" id="btn-leaderboard" style="width: 100%; padding: 12px; background: rgba(234, 179, 8, 0.2); border: 1px solid rgba(234, 179, 8, 0.5);">
+                    <button class="action-btn secondary" id="btn-leaderboard" style="width: 100%; padding: 12px;">
                         🏆 Leaderboard
                     </button>
                     <button class="action-btn secondary" id="btn-custom-decks" style="width: 100%; padding: 12px;">
                         Deck Manager
                     </button>
-                    <button class="action-btn secondary" id="btn-mods" style="width: 100%; padding: 12px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5);">
+                    <button class="action-btn secondary" id="btn-mods" style="width: 100%; padding: 12px;">
                         Mod Manager (${this.modManager.getLoadedMods().minions.length + this.modManager.getLoadedMods().abilities.length})
                     </button>
                 </div>
@@ -140,11 +122,6 @@ class CheggGame {
         `;
 
         document.body.appendChild(overlay);
-
-        overlay.querySelector('#btn-quick-start').addEventListener('click', () => {
-            overlay.remove();
-            this.startGameWithDefaultDecks();
-        });
 
         overlay.querySelector('#btn-custom-local').addEventListener('click', () => {
             overlay.remove();
@@ -186,33 +163,6 @@ class CheggGame {
                 window.location.href = 'admin.html';
             });
         }
-
-        document.addEventListener('chegg:auth_success', (e) => {
-            const { elo } = e.detail;
-            const badge = overlay.querySelector('#lobby-elo-badge');
-            if (badge) {
-                badge.textContent = elo;
-                badge.style.display = 'flex';
-            }
-            if (btnProfile) {
-                btnProfile.textContent = `Account (${elo} Elo)`;
-            }
-        });
-
-        // Listen for rating changes during/after game
-        document.addEventListener('chegg:rating_change', (e) => {
-            const auth = this.networkClient.authManager;
-            const myName = auth.username;
-            const myData = e.detail.blue.username === myName ? e.detail.blue : e.detail.red;
-
-            const badge = overlay.querySelector('#lobby-elo-badge');
-            if (badge) {
-                badge.textContent = myData.newElo;
-            }
-            if (btnProfile) {
-                btnProfile.textContent = `Account (${myData.newElo} Elo)`;
-            }
-        });
 
         overlay.querySelector('#btn-custom-decks').addEventListener('click', () => {
             overlay.remove();
@@ -1079,7 +1029,7 @@ class CheggGame {
                 <div class="modal-title">Select Deck</div>
                 <div style="margin: 20px 0; max-height: 300px; overflow-y: auto;">
                     <button class="action-btn primary" style="width: 100%; margin-bottom: 12px;" onclick="this.closest('.modal-overlay').remove(); window.game._onDeckSelected('default')">
-                        Standard Starters
+                        Standard Deck
                     </button>
                     <div id="deck-list-container">
                         ${deckListHtml}
@@ -1235,12 +1185,23 @@ class CheggGame {
     showProfileModal(onComplete) {
         const auth = this.networkClient.authManager;
         const creds = auth.getCredentials() || { username: '', token: '' };
+        const elo = auth.elo || 1000;
+        const isAuthenticated = auth.isAuthenticated();
 
         const overlay = createModalOverlay({ id: 'profile-modal' });
 
         overlay.innerHTML = `
             <div class="modal" style="width: 400px; text-align: center;">
                 <div class="modal-title">Player Profile</div>
+                
+                ${isAuthenticated ? `
+                    <div style="background: linear-gradient(135deg, var(--mana-color), #a78bfa); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Your Rating</div>
+                        <div style="font-size: 3rem; font-weight: 800; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.3);">${elo}</div>
+                        <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9); margin-top: 4px;">ELO</div>
+                    </div>
+                ` : ''}
+                
                 <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 20px;">
                     Your identity is secured by a Secret Token. Keep it safe to use your rank on other devices!
                 </p>

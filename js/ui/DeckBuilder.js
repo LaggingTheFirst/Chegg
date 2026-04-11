@@ -40,7 +40,7 @@ export class DeckBuilder {
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div class="mana-label">Available Minions (click to add)</div>
                         <div style="display: flex; gap: 4px;">
-                            <button class="action-btn secondary" id="btn-default" style="font-size: 0.65rem; padding: 4px 8px;">Default Deck</button>
+                            <button class="action-btn secondary" id="btn-default" style="font-size: 0.65rem; padding: 4px 8px;">Standard Deck</button>
                             <button class="action-btn secondary" id="btn-clear" style="font-size: 0.65rem; padding: 4px 8px; color: var(--player-red);">Clear</button>
                         </div>
                     </div>
