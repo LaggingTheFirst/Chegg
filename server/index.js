@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Level } from 'level';
 import { RoomManager } from './RoomManager.js';
+import { TournamentManager } from './TournamentManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -97,7 +98,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.post('/api/admin/auth', rateLimit({ max: 5, windowMs: 60000, message: 'Too many login attempts' }), (req, res) => {
+app.post('/api/admin/auth', rateLimit({ max: 10, windowMs: 60000, message: 'Too many login attempts' }), (req, res) => {
     const { password } = req.body;
     
     console.log('[ADMIN AUTH] Attempt with password:', password);
@@ -299,7 +300,7 @@ app.get('/api/admin/players', verifyAdminToken, async (req, res) => {
     }
 });
 
-app.post('/api/admin/player', verifyAdminToken, rateLimit({ max: 20, windowMs: 60000, message: 'Too many player creation requests' }), async (req, res) => {
+app.post('/api/admin/player', verifyAdminToken, rateLimit({ max: 30, windowMs: 60000, message: 'Too many player creation requests' }), async (req, res) => {
     try {
         const { username, elo, wins, losses, force } = req.body;
         
@@ -409,7 +410,7 @@ app.delete('/api/admin/player/:username', verifyAdminToken, rateLimit({ max: 30,
     }
 });
 
-app.delete('/api/admin/clear-all', verifyAdminToken, rateLimit({ max: 2, windowMs: 300000, message: 'Clear all can only be used twice per 5 minutes' }), async (req, res) => {
+app.delete('/api/admin/clear-all', verifyAdminToken, rateLimit({ max: 5, windowMs: 300000, message: 'Clear all can only be used twice per 5 minutes' }), async (req, res) => {
     try {
         console.log('[ADMIN] Clearing all player data...');
         
@@ -476,7 +477,152 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '../admin.html'));
 });
 
-const roomManager = new RoomManager(wss, db);
+// Tournament endpoints (admin-only creation)
+app.post('/api/tournament/create', verifyAdminToken, rateLimit({ max: 30, windowMs: 60000 }), (req, res) => {
+    try {
+        const { name, rounds, timeControl, scheduledStart, description } = req.body;
+        const tournament = tournamentManager.createTournament({ 
+            name, 
+            rounds, 
+            timeControl, 
+            scheduledStart,
+            description 
+        });
+        res.json({ success: true, tournament });
+    } catch (err) {
+        console.error('Create tournament error:', err);
+        res.status(500).json({ success: false, error: 'Failed to create tournament' });
+    }
+});
+
+app.post('/api/tournament/:id/register', rateLimit({ max: 50, windowMs: 60000 }), async (req, res) => {
+    try {
+        const { username, deck } = req.body;
+        const tournamentId = req.params.id;
+        
+        // Get player ELO
+        let elo = 400;
+        try {
+            const profile = await db.get(`user:${username}`);
+            const data = typeof profile === 'string' ? JSON.parse(profile) : profile;
+            elo = data.elo || 400;
+        } catch (err) {
+            // Player doesn't exist yet, use default
+        }
+
+        const result = tournamentManager.registerPlayer(tournamentId, username, elo, deck);
+        res.json(result);
+    } catch (err) {
+        console.error('Register player error:', err);
+        res.status(500).json({ success: false, error: 'Failed to register' });
+    }
+});
+
+app.post('/api/tournament/:id/unregister', rateLimit({ max: 50, windowMs: 60000 }), (req, res) => {
+    try {
+        const { username } = req.body;
+        const tournamentId = req.params.id;
+        const result = tournamentManager.unregisterPlayer(tournamentId, username);
+        res.json(result);
+    } catch (err) {
+        console.error('Unregister player error:', err);
+        res.status(500).json({ success: false, error: 'Failed to unregister' });
+    }
+});
+
+app.post('/api/tournament/:id/start', verifyAdminToken, rateLimit({ max: 5, windowMs: 60000 }), (req, res) => {
+    try {
+        const tournamentId = req.params.id;
+        const result = tournamentManager.startTournament(tournamentId);
+        res.json(result);
+    } catch (err) {
+        console.error('Start tournament error:', err);
+        res.status(500).json({ success: false, error: 'Failed to start tournament' });
+    }
+});
+
+app.post('/api/tournament/:id/advance', verifyAdminToken, rateLimit({ max: 10, windowMs: 60000 }), (req, res) => {
+    try {
+        const tournamentId = req.params.id;
+        const result = tournamentManager.advanceRound(tournamentId);
+        res.json(result);
+    } catch (err) {
+        console.error('Advance round error:', err);
+        res.status(500).json({ success: false, error: 'Failed to advance round' });
+    }
+});
+
+app.delete('/api/tournament/:id', verifyAdminToken, rateLimit({ max: 10, windowMs: 60000 }), (req, res) => {
+    try {
+        const tournamentId = req.params.id;
+        const tournament = tournamentManager.getTournament(tournamentId);
+        
+        if (!tournament) {
+            return res.status(404).json({ success: false, error: 'Tournament not found' });
+        }
+        
+        tournamentManager.tournaments.delete(tournamentId);
+        tournamentManager.activeTournaments.delete(tournamentId);
+        
+        res.json({ success: true, message: 'Tournament deleted' });
+    } catch (err) {
+        console.error('Delete tournament error:', err);
+        res.status(500).json({ success: false, error: 'Failed to delete tournament' });
+    }
+});
+
+app.get('/api/tournament/:id', rateLimit({ max: 100, windowMs: 60000 }), (req, res) => {
+    try {
+        const tournamentId = req.params.id;
+        const tournament = tournamentManager.getTournament(tournamentId);
+        
+        if (!tournament) {
+            return res.status(404).json({ success: false, error: 'Tournament not found' });
+        }
+
+        const standings = tournamentManager.getStandings(tournamentId);
+        const pairings = tournamentManager.getCurrentPairings(tournamentId);
+
+        res.json({
+            success: true,
+            tournament: {
+                id: tournament.id,
+                name: tournament.name,
+                status: tournament.status,
+                rounds: tournament.rounds,
+                currentRound: tournament.currentRound,
+                participants: tournament.participants.length,
+                createdAt: tournament.createdAt,
+                scheduledStart: tournament.scheduledStart,
+                startedAt: tournament.startedAt,
+                completedAt: tournament.completedAt,
+                description: tournament.description
+            },
+            standings,
+            pairings
+        });
+    } catch (err) {
+        console.error('Get tournament error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch tournament' });
+    }
+});
+
+app.get('/api/tournaments', rateLimit({ max: 100, windowMs: 60000 }), (req, res) => {
+    try {
+        const tournaments = tournamentManager.getAllTournaments();
+        res.json({ success: true, tournaments });
+    } catch (err) {
+        console.error('Get tournaments error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch tournaments' });
+    }
+});
+
+app.get('/tournament', (req, res) => {
+    res.sendFile(path.join(__dirname, '../tournament.html'));
+});
+
+const tournamentManager = new TournamentManager(db);
+const roomManager = new RoomManager(wss, db, tournamentManager);
 
 wss.on('connection', (ws) => {
     // console.log('new connection');
@@ -492,6 +638,9 @@ wss.on('connection', (ws) => {
             switch (event) {
                 case 'join_matchmaking':
                     roomManager.addToMatchmaking(ws, payload);
+                    break;
+                case 'join_tournament_match':
+                    roomManager.joinTournamentMatch(ws, payload);
                     break;
                 case 'auth':
                     roomManager.handleAuth(ws, payload);

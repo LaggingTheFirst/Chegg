@@ -1,4 +1,5 @@
 import { AuthManager } from './AuthManager.js';
+import { WS_URL } from '../config.js';
 
 export class NetworkClient {
     constructor(game) {
@@ -14,15 +15,8 @@ export class NetworkClient {
     connect() {
         if (this.socket && this.socket.readyState <= 1) return;
 
-        let ip = "recommended-guy-detroit-our.trycloudflare.com";
-        const port = 80;
-
-        // Use the current host but change protocol to ws://
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${ip}:${port}`;
-
-        console.log('Connecting to WebSocket:', wsUrl);
-        this.socket = new WebSocket(wsUrl);
+        console.log('Connecting to WebSocket:', WS_URL);
+        this.socket = new WebSocket(WS_URL);
 
         this.socket.onmessage = (event) => {
             try {
@@ -170,5 +164,9 @@ export class NetworkClient {
 
     forfeit() {
         this.send('forfeit');
+    }
+
+    joinTournamentMatch(tournamentId, username, deck) {
+        this.send('join_tournament_match', { tournamentId, username, deck });
     }
 }

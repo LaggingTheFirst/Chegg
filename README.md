@@ -10,6 +10,24 @@
 3. Run `npm start`.
 4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Server Configuration
+
+To change the server URL (for multiplayer, leaderboards, tournaments):
+
+1. Edit `js/config.js`
+2. Change `SERVER_URL` to your server address
+3. That's it! All pages automatically use the new URL
+
+See [SERVER_CONFIG.md](SERVER_CONFIG.md) for detailed setup instructions.
+
+## Tournament System
+
+The game now includes Swiss-style tournaments! See [TOURNAMENT_GUIDE.md](TOURNAMENT_GUIDE.md) for:
+- How to create and run tournaments
+- Swiss pairing system explanation
+- API documentation
+- Tips for tournament organizers
+
 ## Issues
 
 Create an issue on this repo with the correct tag thanks.

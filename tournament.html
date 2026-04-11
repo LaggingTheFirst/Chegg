@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0e1a">
+    <title>Chegg Tournaments</title>
+    <link rel="icon" type="image/png" href="egg.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles/game.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: clamp(12px, 3vw, 24px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all var(--transition-smooth);
+            font-size: 0.9rem;
+        }
+
+        .back-btn:hover {
+            background: var(--bg-panel);
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-primary);
+            font-size: clamp(2rem, 6vw, 3rem);
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            font-weight: 500;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab.active {
+            color: var(--mana-color);
+            border-bottom-color: var(--mana-color);
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tournament-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all var(--transition-smooth);
+            cursor: pointer;
+        }
+
+        .tournament-card:hover {
+            border-color: var(--mana-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+        }
+
+        .tournament-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .tournament-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .tournament-status {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-registration {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-active {
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--mana-color);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .status-completed {
+            background: rgba(100, 116, 139, 0.15);
+            color: #64748b;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .tournament-info {
+            display: flex;
+            gap: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .create-form {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--mana-color);
+        }
+
+        .detail-view {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .standings-table th {
+            background: var(--bg-panel);
+            padding: 12px;
+            text-align: left;
+            color: var(--mana-color);
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .standings-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            line-height: 1.5;
+        }
+
+        .standings-table tr:hover {
+            background: var(--bg-panel);
+        }
+
+        .pairings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .pairing-card {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .pairing-card.completed {
+            border-color: #22c55e;
+        }
+
+        .vs {
+            text-align: center;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin: 8px 0;
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .winner {
+            color: #22c55e;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 24px 0 16px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">
+            <span>⬅</span>
+            <span>Back to Game</span>
+        </a>
+        
+        <h1>Tournaments</h1>
+        <!-- <div class="subtitle">Swiss-Style Competitive Play</div> -->
+
+        <div class="tabs">
+            <button class="tab active" data-tab="browse">Upcoming Tournaments</button>
+            <button class="tab" data-tab="my">My Tournaments</button>
+        </div>
+
+        <div id="browse-tab" class="tab-content active">
+            <div id="tournaments-list"></div>
+        </div>
+
+        <div id="my-tab" class="tab-content">
+            <div id="my-tournaments-list"></div>
+        </div>
+
+        <div id="tournament-detail" style="display: none;">
+            <button class="back-btn" onclick="backToList()">
+                <span>⬅</span>
+                <span>Back to List</span>
+            </button>
+            <div class="detail-view">
+                <div id="detail-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { AuthManager } from './js/multiplayer/AuthManager.js';
+        import { DeckManager } from './js/engine/DeckManager.js';
+        import { API_URL } from './js/config.js';
+        import { RankSystem } from './js/ui/RankSystem.js';
+
+        const authManager = new AuthManager();
+        const rankSystem = new RankSystem();
+        let currentView = 'list';
+        let currentTournament = null;
+
+        // Make rankSystem available globally for renderTournamentDetail
+        window.rankSystem = rankSystem;
+
+        async function init() {
+            await rankSystem.load();
+            console.log('[RankSystem] Loaded for tournaments');
+        }
+
+        init();
+
+        function formatScheduledDate(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = date - now;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return 'Started';
+            } else if (diffDays === 0) {
+                return 'Today ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else if (diffDays === 1) {
+                return 'Tomorrow ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else if (diffDays < 7) {
+                return `In ${diffDays} days`;
+            } else {
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                const tabName = tab.dataset.tab;
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+                
+                if (tabName === 'browse') loadTournaments();
+                if (tabName === 'my') loadMyTournaments();
+            });
+        });
+
+        async function loadTournaments() {
+            try {
+                const response = await fetch(`${API_URL}/tournaments`);
+                const data = await response.json();
+                
+                if (!data.success) throw new Error(data.error);
+                
+                const list = document.getElementById('tournaments-list');
+                if (data.tournaments.length === 0) {
+                    list.innerHTML = '<div class="loading">No tournaments available</div>';
+                    return;
+                }
+                
+                list.innerHTML = data.tournaments.map(t => `
+                    <div class="tournament-card" onclick="viewTournament('${t.id}')">
+                        <div class="tournament-header">
+                            <div class="tournament-name">${t.name}</div>
+                            <div class="tournament-status status-${t.status}">${t.status}</div>
+                        </div>
+                        <div class="tournament-info">
+                            <span>Players: ${t.participants}</span>
+                            <span>Round ${t.currentRound}/${t.rounds}</span>
+                            ${t.scheduledStart ? `<span>Starts: ${formatScheduledDate(t.scheduledStart)}</span>` : '<span>Not scheduled</span>'}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Load tournaments error:', err);
+                document.getElementById('tournaments-list').innerHTML = 
+                    '<div class="error">Failed to load tournaments</div>';
+            }
+        }
+
+        async function loadMyTournaments() {
+            const creds = authManager.getCredentials();
+            if (!creds) {
+                document.getElementById('my-tournaments-list').innerHTML = 
+                    '<div class="loading">Please set a username in the main game first</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/tournaments`);
+                const data = await response.json();
+                
+                if (!data.success) throw new Error(data.error);
+                
+                // Filter tournaments where user is registered
+                const myTournaments = [];
+                for (const t of data.tournaments) {
+                    const detailResponse = await fetch(`${API_URL}/tournament/${t.id}`);
+                    const detailData = await detailResponse.json();
+                    if (detailData.success) {
+                        const tournament = detailData.tournament;
+                        // Check if user is in standings
+                        if (detailData.standings.some(s => s.username === creds.username)) {
+                            myTournaments.push({ ...t, detail: detailData });
+                        }
+                    }
+                }
+                
+                const list = document.getElementById('my-tournaments-list');
+                if (myTournaments.length === 0) {
+                    list.innerHTML = '<div class="loading">You are not registered in any tournaments</div>';
+                    return;
+                }
+                
+                list.innerHTML = myTournaments.map(t => `
+                    <div class="tournament-card" onclick="viewTournament('${t.id}')">
+                        <div class="tournament-header">
+                            <div class="tournament-name">${t.name}</div>
+                            <div class="tournament-status status-${t.status}">${t.status}</div>
+                        </div>
+                        <div class="tournament-info">
+                            <span>Players: ${t.participants}</span>
+                            <span>Round ${t.currentRound}/${t.rounds}</span>
+                            ${t.scheduledStart ? `<span>Starts: ${formatScheduledDate(t.scheduledStart)}</span>` : '<span>Not scheduled</span>'}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Load my tournaments error:', err);
+                document.getElementById('my-tournaments-list').innerHTML = 
+                    '<div class="error">Failed to load your tournaments</div>';
+            }
+        }
+
+        window.createTournament = async function() {
+            const name = document.getElementById('tournament-name').value;
+            const rounds = parseInt(document.getElementById('tournament-rounds').value);
+            const timeControl = parseInt(document.getElementById('tournament-time').value);
+            
+            if (!name) {
+                alert('Please enter a tournament name');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/tournament/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, rounds, timeControl })
+                });
+                
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+                
+                alert('Tournament created successfully!');
+                document.querySelector('[data-tab="browse"]').click();
+                loadTournaments();
+            } catch (err) {
+                alert('Failed to create tournament: ' + err.message);
+            }
+        };
+
+        window.viewTournament = async function(tournamentId) {
+            try {
+                const response = await fetch(`${API_URL}/tournament/${tournamentId}`);
+                const data = await response.json();
+                
+                if (!data.success) throw new Error(data.error);
+                
+                currentTournament = data;
+                renderTournamentDetail(data);
+                
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                document.getElementById('tournament-detail').style.display = 'block';
+            } catch (err) {
+                alert('Failed to load tournament: ' + err.message);
+            }
+        };
+
+        function renderTournamentDetail(data) {
+            const { tournament, standings, pairings } = data;
+            const creds = authManager.getCredentials();
+            const isRegistered = creds && standings.some(s => s.username === creds.username);
+            
+            let html = `
+                <div class="tournament-header">
+                    <div class="tournament-name">${tournament.name}</div>
+                    <div class="tournament-status status-${tournament.status}">${tournament.status}</div>
+                </div>`;
+            
+            if (tournament.description) {
+                html += `<div style="color: var(--text-secondary); margin: 12px 0; font-size: 0.95rem;">${tournament.description}</div>`;
+            }
+            
+            html += `<div class="tournament-info" style="margin: 16px 0;">
+                    <span>Players: ${tournament.participants}</span>
+                    <span>Round ${tournament.currentRound}/${tournament.rounds}</span>`;
+            
+            if (tournament.scheduledStart) {
+                html += `<span>Starts: ${formatScheduledDate(tournament.scheduledStart)}</span>`;
+            }
+            
+            html += `</div>`;
+            
+            if (tournament.status === 'registration') {
+                if (isRegistered) {
+                    html += `<button class="action-btn danger" onclick="unregister('${tournament.id}')">Unregister</button>`;
+                } else if (creds) {
+                    html += `<button class="action-btn primary" onclick="register('${tournament.id}')">Register for Tournament</button>`;
+                } else {
+                    html += `<div class="loading">Set a username in the main game to register</div>`;
+                }
+            }
+            
+            if (tournament.status === 'active' && isRegistered) {
+                const myMatch = pairings.find(p => p.player1 === creds.username || p.player2 === creds.username);
+                if (myMatch && !myMatch.completed && myMatch.player2 !== null) {
+                    html += `<button class="action-btn primary" onclick="joinMatch('${tournament.id}')">Join My Match</button>`;
+                } else if (myMatch && myMatch.player2 === null) {
+                    html += `<div style="padding: 12px; background: rgba(34, 197, 94, 0.15); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 8px; color: #22c55e; margin: 12px 0;">You have a bye this round (automatic win)</div>`;
+                } else if (myMatch && myMatch.completed) {
+                    html += `<div style="padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px; color: var(--text-secondary); margin: 12px 0;">Your match is complete. Waiting for other matches...</div>`;
+                }
+            }
+            
+            html += `<div class="section-title">Standings</div>`;
+            html += `<table class="standings-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">Rank</th>
+                        <th style="width: 180px;">Player</th>
+                        <th style="width: 150px;">Tier</th>
+                        <th style="width: 80px;">ELO</th>
+                        <th style="width: 80px;">Points</th>
+                        <th style="width: 80px;">Wins</th>
+                        <th style="width: 80px;">Losses</th>
+                        <th style="width: 80px;">Opp Pts</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            standings.forEach((s, i) => {
+                html += `<tr>
+                    <td>#${i + 1}</td>
+                    <td class="player-name">${s.username}</td>
+                    <td><div id="rank-${s.username}"></div></td>
+                    <td>${s.elo}</td>
+                    <td>${s.points}</td>
+                    <td>${s.wins}</td>
+                    <td>${s.losses}</td>
+                    <td>${s.opponentPoints}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            
+            if (pairings && pairings.length > 0) {
+                html += `<div class="section-title">Round ${tournament.currentRound} Pairings</div>`;
+                html += `<div class="pairings-grid">`;
+                
+                pairings.forEach(p => {
+                    const completed = p.completed ? 'completed' : '';
+                    html += `<div class="pairing-card ${completed}">`;
+                    
+                    if (p.player2 === null) {
+                        html += `<div class="player-name">${p.player1}</div>
+                                <div class="vs">BYE</div>`;
+                    } else {
+                        html += `<div class="player-name ${p.winner === p.player1 ? 'winner' : ''}">${p.player1}</div>
+                                <div class="vs">VS</div>
+                                <div class="player-name ${p.winner === p.player2 ? 'winner' : ''}">${p.player2}</div>`;
+                        
+                        if (p.completed) {
+                            html += `<div style="text-align: center; margin-top: 8px; color: #22c55e; font-weight: 600;">✓ Complete</div>`;
+                        }
+                    }
+                    
+                    html += `</div>`;
+                });
+                
+                html += `</div>`;
+            }
+            
+            document.getElementById('detail-content').innerHTML = html;
+            
+            // Render rank badges after HTML is inserted
+            if (window.rankSystem && window.rankSystem.loaded) {
+                standings.forEach(s => {
+                    const rankDiv = document.getElementById(`rank-${s.username}`);
+                    if (rankDiv) {
+                        if (s.elo >= 2000) {
+                            rankDiv.innerHTML = '<div style="display: inline-flex; align-items: center; gap: 6px;"><img src="assets/leaderboard/eye.png" alt="The Eye" style="width: 24px; height: 24px; image-rendering: pixelated;"><span style="color: #a855f7; font-weight: 600;">The Eye</span></div>';
+                        } else {
+                            const rankHTML = window.rankSystem.getRankHTML(s.elo, { size: 24, showName: true });
+                            rankDiv.innerHTML = rankHTML;
+                        }
+                    }
+                });
+            }
+        }
+
+        window.register = async function(tournamentId) {
+            const creds = authManager.getCredentials();
+            if (!creds) {
+                alert('Please set a username in the main game first');
+                return;
+            }
+            
+            const savedDeckNames = DeckManager.getSavedDeckNames();
+            if (savedDeckNames.length === 0) {
+                alert('Please create a deck in the main game first');
+                return;
+            }
+            
+            // Load the first saved deck
+            const deck = DeckManager.loadDeck(savedDeckNames[0], { getConfig: () => null });
+            
+            try {
+                const response = await fetch(`${API_URL}/tournament/${tournamentId}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: creds.username, deck })
+                });
+                
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+                
+                alert('Registered successfully!');
+                viewTournament(tournamentId);
+            } catch (err) {
+                alert('Failed to register: ' + err.message);
+            }
+        };
+
+        window.unregister = async function(tournamentId) {
+            const creds = authManager.getCredentials();
+            if (!creds) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/tournament/${tournamentId}/unregister`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: creds.username })
+                });
+                
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+                
+                alert('Unregistered successfully');
+                viewTournament(tournamentId);
+            } catch (err) {
+                alert('Failed to unregister: ' + err.message);
+            }
+        };
+
+        window.startTournament = async function(tournamentId) {
+            try {
+                const response = await fetch(`${API_URL}/tournament/${tournamentId}/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+                
+                alert('Tournament started!');
+                viewTournament(tournamentId);
+            } catch (err) {
+                alert('Failed to start tournament: ' + err.message);
+            }
+        };
+
+        window.advanceRound = async function(tournamentId) {
+            try {
+                const response = await fetch(`${API_URL}/tournament/${tournamentId}/advance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error);
+                
+                alert('Advanced to next round!');
+                viewTournament(tournamentId);
+            } catch (err) {
+                alert('Failed to advance round: ' + err.message);
+            }
+        };
+
+        window.joinMatch = function(tournamentId) {
+            const creds = authManager.getCredentials();
+            if (!creds) return;
+            
+            // Store tournament info and redirect to game
+            localStorage.setItem('tournament_join', JSON.stringify({
+                tournamentId,
+                username: creds.username
+            }));
+            
+            window.location.href = '/index.html';
+        };
+
+        window.backToList = function() {
+            document.getElementById('tournament-detail').style.display = 'none';
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            document.querySelector('.tab.active').click();
+        };
+
+        loadTournaments();
+    </script>
+</body>
+</html>

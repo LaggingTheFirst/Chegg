@@ -65,7 +65,38 @@ class CheggGame {
         // expose export function
         window.exportBoard = () => this.gameState.exportBoardState();
 
-        this.showStartScreen();
+        // Check if joining tournament match
+        const tournamentJoin = localStorage.getItem('tournament_join');
+        if (tournamentJoin) {
+            localStorage.removeItem('tournament_join');
+            const { tournamentId, username } = JSON.parse(tournamentJoin);
+            this.joinTournamentMatch(tournamentId, username);
+        } else {
+            this.showStartScreen();
+        }
+    }
+
+    joinTournamentMatch(tournamentId, username) {
+        const overlay = createModalOverlay({ id: 'tournament-join' });
+        overlay.innerHTML = `
+            <div class="modal" style="text-align: center;">
+                <div class="modal-title">Joining Tournament Match...</div>
+                <div class="preloader-spinner" style="margin: 20px auto;"></div>
+                <button class="action-btn secondary" onclick="window.location.href='tournament.html'">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        this.selectDeck((deck) => {
+            this.networkClient.connect();
+            // Wait for connection
+            const checkConnection = setInterval(() => {
+                if (this.networkClient.socket && this.networkClient.socket.readyState === 1) {
+                    clearInterval(checkConnection);
+                    this.networkClient.joinTournamentMatch(tournamentId, username, deck);
+                }
+            }, 100);
+        });
     }
 
     showStartScreen() {
@@ -105,7 +136,10 @@ class CheggGame {
                         My Profile
                     </button>
                     <button class="action-btn secondary" id="btn-leaderboard" style="width: 100%; padding: 12px;">
-                        🏆 Leaderboard
+                        Leaderboard
+                    </button>
+                    <button class="action-btn secondary" id="btn-tournaments" style="width: 100%; padding: 12px;">
+                        Tournaments
                     </button>
                     <button class="action-btn secondary" id="btn-custom-decks" style="width: 100%; padding: 12px;">
                         Deck Manager
@@ -155,6 +189,10 @@ class CheggGame {
 
         overlay.querySelector('#btn-leaderboard').addEventListener('click', () => {
             window.location.href = 'leaderboard.html';
+        });
+
+        overlay.querySelector('#btn-tournaments').addEventListener('click', () => {
+            window.location.href = 'tournament.html';
         });
 
         const btnAdmin = overlay.querySelector('#btn-admin');

@@ -1,2 +1,2 @@
-set ADMIN_PASSWORD="Test1234567890"
+set ADMIN_PASSWORD="1"
 node index.js

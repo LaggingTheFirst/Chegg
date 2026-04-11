@@ -119,6 +119,11 @@ export class Room {
                 this.stopTimer();
                 this.calculateEloChange(this.gameState.winner);
                 this.saveToDB();
+                
+                // Notify tournament if this is a tournament match
+                if (this.config.tournamentId && this.config.onMatchComplete) {
+                    this.config.onMatchComplete(this.gameState.winner);
+                }
             } else if (type === 'END_TURN') {
                 this.saveToDB(); // save point after each turn
             }
@@ -388,6 +393,11 @@ export class Room {
             this.stopTimer();
             this.calculateEloChange(this.gameState.winner);
             this.saveToDB();
+            
+            // Notify tournament if this is a tournament match
+            if (this.config.tournamentId && this.config.onMatchComplete) {
+                this.config.onMatchComplete(this.gameState.winner);
+            }
         }
     }
 
@@ -404,6 +414,11 @@ export class Room {
             this.calculateEloChange(winner);
             this.saveToDB();
             this.stopTimer();
+            
+            // Notify tournament if this is a tournament match
+            if (this.config.tournamentId && this.config.onMatchComplete) {
+                this.config.onMatchComplete(winner);
+            }
         }
     }
 
