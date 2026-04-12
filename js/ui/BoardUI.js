@@ -9,6 +9,8 @@ export class BoardUI {
         this.tiles = [];
         this.onTileClick = null;
         this.onMinionClick = null;
+        this.onTileRightClick = null;
+        this.flipped = false;
 
         this.init();
     }
@@ -91,6 +93,12 @@ export class BoardUI {
             this.handleTileClick(row, col);
         });
 
+        tile.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.handleTileRightClick(row, col);
+        });
+
         return tile;
     }
 
@@ -102,6 +110,12 @@ export class BoardUI {
             this.onMinionClick(minion, row, col);
         } else if (this.onTileClick) {
             this.onTileClick(row, col);
+        }
+    }
+
+    handleTileRightClick(row, col) {
+        if (this.onTileRightClick) {
+            this.onTileRightClick(row, col);
         }
     }
 
@@ -146,7 +160,7 @@ export class BoardUI {
             minionEl.classList.add('just-spawned');
         }
 
-        if (minion.hasMoved && minion.id !== 'villager' && !minion.hasDashed) {
+        if (minion.hasMoved && minion.id !== 'villager' && !minion.hasDashed && !this.sandboxMode) {
             minionEl.classList.add('dash-mode');
         }
 
@@ -255,6 +269,7 @@ export class BoardUI {
     }
 
     setFlip(flipped) {
+        this.flipped = flipped;
         const wrapper = this.container.querySelector('.board-grid-wrapper');
         if (flipped) {
             wrapper.classList.add('flipped');

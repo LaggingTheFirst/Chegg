@@ -130,7 +130,7 @@ class CheggGame {
                         </select>
                     </div>
                     <button class="action-btn secondary" id="btn-custom-online" style="width: 100%; padding: 12px;">
-                        Custom Online Game
+                        Sandbox Mode
                     </button>
                     <button class="action-btn secondary" id="btn-profile" style="width: 100%; padding: 12px;">
                         My Profile
@@ -171,7 +171,8 @@ class CheggGame {
         });
 
         overlay.querySelector('#btn-custom-online').addEventListener('click', () => {
-            this.showCustomOnlineMenu();
+            overlay.remove();
+            this.startSandboxMode();
         });
 
         overlay.querySelector('#btn-vs-ai').addEventListener('click', () => {
@@ -210,6 +211,409 @@ class CheggGame {
         overlay.querySelector('#btn-mods').addEventListener('click', () => {
             this.modManagerUI.show();
         });
+    }
+
+    startSandboxMode() {
+        // Initialize game state without decks
+        this.isOnline = false;
+        this.sandboxMode = true; // Set this early
+        this.gameState = new GameState();
+        this.turnManager = new TurnManager(this.gameState);
+        this.abilitySystem = new AbilitySystem(this.gameState);
+        this.abilitySystem.loadFromModManager(this.modManager);
+
+        // Don't initialize decks or hands - pure sandbox
+        this.gameState.players.blue.hand = [];
+        this.gameState.players.red.hand = [];
+        this.gameState.players.blue.deck = [];
+        this.gameState.players.red.deck = [];
+        
+        // Give infinite mana
+        this.gameState.players.blue.mana = 999;
+        this.gameState.players.red.mana = 999;
+        this.gameState.players.blue.maxMana = 999;
+        this.gameState.players.red.maxMana = 999;
+
+        this.setupSandboxUI();
+        this.enableSandboxMode();
+    }
+
+    setupSandboxUI() {
+        const container = document.getElementById('game-container');
+        container.innerHTML = `
+            <header class="game-header">
+                <div class="game-title">SANDBOX MODE</div>
+                <div style="color: var(--text-secondary); font-size: 0.9rem;">Place and move minions freely</div>
+            </header>
+            
+            <main class="game-main">
+                <div class="board-wrapper">
+                    <div class="board-container" id="board-container"></div>
+                    
+                    <div class="action-bar">
+                        <button class="action-btn secondary" id="btn-flip-board">Flip Board</button>
+                        <button class="action-btn secondary" id="btn-clear-board">Clear Board</button>
+                        <button class="action-btn danger" id="btn-exit-sandbox">Exit Sandbox</button>
+                    </div>
+                </div>
+            </main>
+        `;
+
+        this.boardUI = new BoardUI(this.gameState, '#board-container');
+        this.boardUI.sandboxMode = true; // Tell BoardUI we're in sandbox
+        this.boardUI.render();
+
+        document.getElementById('btn-flip-board').addEventListener('click', () => {
+            this.boardUI.setFlip(!this.boardUI.flipped);
+            this.boardUI.render();
+        });
+
+        document.getElementById('btn-clear-board').addEventListener('click', () => {
+            if (confirm('Clear all minions from the board?')) {
+                for (const minion of Array.from(this.gameState.minionRegistry.values())) {
+                    this.gameState.removeMinion(minion);
+                }
+                this.boardUI.render();
+            }
+        });
+
+        document.getElementById('btn-exit-sandbox').addEventListener('click', () => {
+            window.location.reload();
+        });
+    }
+
+    enableSandboxMode() {
+        this.sandboxMode = true;
+        this.selectedSandboxMinion = null;
+
+        // Add sandbox panel
+        const sandboxPanel = document.createElement('div');
+        sandboxPanel.id = 'sandbox-panel';
+        sandboxPanel.style.cssText = `
+            position: fixed;
+            right: 20px;
+            top: 80px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            width: 280px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            z-index: 100;
+        `;
+
+        sandboxPanel.innerHTML = `
+            <div style="font-weight: 700; margin-bottom: 12px; color: var(--mana-color); font-size: 1.1rem;">Place Minions</div>
+            <div style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px;">Click a minion, then click the board to place it</div>
+            
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Owner:</label>
+                <select id="sandbox-owner" style="width: 100%; padding: 8px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.85rem;">
+                    <option value="blue">Blue</option>
+                    <option value="red">Red</option>
+                </select>
+            </div>
+
+            <button class="action-btn secondary" id="sandbox-deselect" style="width: 100%; padding: 8px; font-size: 0.85rem; margin-bottom: 12px;">Deselect (Move Mode)</button>
+
+            <div id="minion-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;"></div>
+        `;
+
+        document.body.appendChild(sandboxPanel);
+
+        // Populate minion buttons
+        const minionList = document.getElementById('minion-list');
+        
+        console.log('[SANDBOX] Minion loader:', this.minionLoader);
+        console.log('[SANDBOX] Available minions:', this.minionLoader.configs);
+        
+        if (!this.minionLoader.configs || this.minionLoader.configs.size === 0) {
+            minionList.innerHTML = '<div style="color: var(--player-red); font-size: 0.85rem; grid-column: 1 / -1;">No minions loaded!</div>';
+            return;
+        }
+        
+        const allMinions = Array.from(this.minionLoader.configs.keys()).sort();
+        console.log('[SANDBOX] Creating buttons for:', allMinions);
+        
+        allMinions.forEach(id => {
+            const config = this.minionLoader.getConfig(id);
+            if (!config) {
+                console.warn('[SANDBOX] No config for:', id);
+                return;
+            }
+            
+            const btn = document.createElement('button');
+            btn.className = 'action-btn secondary';
+            btn.style.cssText = `
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                min-height: 70px;
+                position: relative;
+            `;
+            
+            // Create image element
+            const img = document.createElement('img');
+            const imgPath = `assets/minions/${config.image || id + '.png'}`;
+            img.src = imgPath;
+            img.style.cssText = 'width: 32px; height: 32px; object-fit: contain;';
+            img.onerror = () => {
+                // Fallback to text initials if image fails
+                img.style.display = 'none';
+                const fallback = document.createElement('div');
+                fallback.textContent = (config.name || id).substring(0, 3).toUpperCase();
+                fallback.style.cssText = 'font-size: 0.9rem; font-weight: 700;';
+                btn.insertBefore(fallback, btn.firstChild);
+            };
+            
+            // Create label
+            const label = document.createElement('div');
+            label.textContent = config.name || id;
+            label.style.cssText = 'font-size: 0.65rem; text-align: center; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis;';
+            
+            btn.appendChild(img);
+            btn.appendChild(label);
+            
+            btn.onclick = () => {
+                // Deselect all
+                minionList.querySelectorAll('button').forEach(b => {
+                    b.classList.remove('primary');
+                    b.classList.add('secondary');
+                });
+                // Select this one
+                btn.classList.remove('secondary');
+                btn.classList.add('primary');
+                this.selectedSandboxMinion = id;
+                console.log('[SANDBOX] Selected:', id);
+            };
+            minionList.appendChild(btn);
+        });
+
+        console.log('[SANDBOX] Created', minionList.children.length, 'minion buttons');
+
+        // Deselect button
+        document.getElementById('sandbox-deselect').addEventListener('click', () => {
+            this.selectedSandboxMinion = null;
+            this.selectedMinionToMove = null;
+            this.sandboxAbilityMode = false;
+            this.currentAbility = null;
+            this.boardUI.clearHighlights();
+            this.boardUI.render();
+            
+            // Deselect all minion buttons
+            minionList.querySelectorAll('button').forEach(b => {
+                b.classList.remove('primary');
+                b.classList.add('secondary');
+            });
+        });
+
+        // Override board click handler
+        this.boardUI.onTileClick = (row, col) => {
+            console.log('[SANDBOX] Empty tile clicked:', row, col);
+            console.log('[SANDBOX] Selected for move:', this.selectedMinionToMove);
+            console.log('[SANDBOX] Selected for place:', this.selectedSandboxMinion);
+            console.log('[SANDBOX] Ability mode:', this.sandboxAbilityMode);
+            
+            // If in ability mode, execute ability on the tile
+            if (this.sandboxAbilityMode && this.selectedMinionToMove && this.currentAbility) {
+                const targets = this.abilitySystem.getValidTargets(this.selectedMinionToMove, this.currentAbility);
+                const validTarget = targets.find(t => t.row === row && t.col === col && !t.minion);
+                
+                if (validTarget) {
+                    console.log('[SANDBOX] Executing ability at', row, col);
+                    this.abilitySystem.execute(this.selectedMinionToMove, this.currentAbility, validTarget);
+                    this.selectedMinionToMove = null;
+                    this.currentAbility = null;
+                    this.sandboxAbilityMode = false;
+                    this.boardUI.clearHighlights();
+                    this.boardUI.render();
+                    return;
+                }
+            }
+            
+            // If we have a minion selected for moving, move it to the empty tile
+            if (this.selectedMinionToMove) {
+                console.log('[SANDBOX] Moving minion to empty tile', row, col);
+                this.gameState.moveMinion(this.selectedMinionToMove, row, col);
+                this.selectedMinionToMove = null;
+                this.sandboxAbilityMode = false;
+                this.currentAbility = null;
+                this.boardUI.clearHighlights();
+                this.boardUI.render();
+                return;
+            }
+            
+            // If we have a minion selected for placement, place it
+            if (this.selectedSandboxMinion) {
+                const owner = document.getElementById('sandbox-owner').value;
+                console.log('[SANDBOX] Placing', this.selectedSandboxMinion, 'at', row, col, 'for', owner);
+
+                // Spawn new minion
+                const minion = this.minionLoader.createSpecializedMinion(this.selectedSandboxMinion, owner);
+                minion.justSpawned = false; // Allow immediate action
+                minion.hasMoved = false;
+                minion.hasAttacked = false;
+                this.gameState.placeMinion(minion, row, col);
+                
+                this.boardUI.render();
+                this.boardUI.animateSpawn(row, col);
+                return;
+            }
+            
+            // Nothing selected, clicking empty tile does nothing
+            console.log('[SANDBOX] Nothing selected, ignoring empty tile click');
+        };
+
+        // Override right-click handler to delete minions
+        this.boardUI.onTileRightClick = (row, col) => {
+            const minion = this.gameState.getMinionAt(row, col);
+            if (minion) {
+                console.log('[SANDBOX] Right-click deleting minion at', row, col);
+                this.gameState.removeMinion(minion);
+                this.boardUI.animateDeath(row, col);
+                setTimeout(() => {
+                    this.boardUI.render();
+                }, 150);
+            }
+        };
+
+        // Override minion click handler for moving
+        this.boardUI.onMinionClick = (minion, row, col) => {
+            console.log('[SANDBOX] Minion clicked:', minion.id, 'at', row, col);
+            console.log('[SANDBOX] Selected for move:', this.selectedMinionToMove);
+            console.log('[SANDBOX] Selected for place:', this.selectedSandboxMinion);
+            console.log('[SANDBOX] Ability mode:', this.sandboxAbilityMode);
+            
+            // If in ability mode, execute ability on the minion
+            if (this.sandboxAbilityMode && this.selectedMinionToMove && this.currentAbility) {
+                const targets = this.abilitySystem.getValidTargets(this.selectedMinionToMove, this.currentAbility);
+                const validTarget = targets.find(t => 
+                    t.minion && t.minion.instanceId === minion.instanceId
+                );
+                
+                if (validTarget) {
+                    console.log('[SANDBOX] Executing ability on minion', minion.id);
+                    this.abilitySystem.execute(this.selectedMinionToMove, this.currentAbility, validTarget);
+                    this.selectedMinionToMove = null;
+                    this.currentAbility = null;
+                    this.sandboxAbilityMode = false;
+                    this.boardUI.clearHighlights();
+                    this.boardUI.render();
+                    return;
+                }
+            }
+            
+            // If we have a minion selected for placement, place it here (replacing the existing minion)
+            if (this.selectedSandboxMinion) {
+                console.log('[SANDBOX] Placement mode - replacing minion at', row, col);
+                const owner = document.getElementById('sandbox-owner').value;
+                
+                // Remove existing minion
+                this.gameState.removeMinion(minion);
+                
+                // Spawn new minion
+                const newMinion = this.minionLoader.createSpecializedMinion(this.selectedSandboxMinion, owner);
+                newMinion.justSpawned = false;
+                newMinion.hasMoved = false;
+                newMinion.hasAttacked = false;
+                this.gameState.placeMinion(newMinion, row, col);
+                
+                this.boardUI.render();
+                this.boardUI.animateSpawn(row, col);
+                return;
+            }
+            
+            if (this.selectedMinionToMove && this.selectedMinionToMove.instanceId === minion.instanceId) {
+                // Clicking the same minion - deselect it
+                console.log('[SANDBOX] Deselecting minion');
+                this.selectedMinionToMove = null;
+                this.sandboxAbilityMode = false;
+                this.currentAbility = null;
+                this.boardUI.clearHighlights();
+                this.boardUI.render();
+            } else if (this.selectedMinionToMove) {
+                // Clicking a different minion while one is selected
+                // If it's an enemy, attack it
+                if (minion.owner !== this.selectedMinionToMove.owner) {
+                    console.log('[SANDBOX] Attacking enemy minion');
+                    this.gameState.removeMinion(minion);
+                    this.boardUI.animateDeath(row, col);
+                    
+                    // Move our minion there
+                    setTimeout(() => {
+                        this.gameState.moveMinion(this.selectedMinionToMove, row, col);
+                        this.selectedMinionToMove = null;
+                        this.sandboxAbilityMode = false;
+                        this.currentAbility = null;
+                        this.boardUI.clearHighlights();
+                        this.boardUI.render();
+                    }, 150);
+                } else {
+                    // Same team - switch selection
+                    console.log('[SANDBOX] Switching to different friendly minion');
+                    this.selectedMinionToMove = minion;
+                    this.sandboxAbilityMode = false;
+                    this.currentAbility = null;
+                    this.boardUI.clearHighlights();
+                    this.boardUI.selectTile(row, col);
+                    this.showSandboxMoves(minion);
+                }
+            } else {
+                // No minion selected - select this one
+                console.log('[SANDBOX] Selecting minion for movement');
+                this.selectedMinionToMove = minion;
+                this.sandboxAbilityMode = false;
+                this.currentAbility = null;
+                this.boardUI.selectTile(row, col);
+                this.showSandboxMoves(minion);
+            }
+        };
+    }
+
+    showSandboxMoves(minion) {
+        // Create a temporary instance to get realistic movement
+        const config = this.minionLoader.getConfig(minion.id);
+        const minionInstance = this.minionLoader.createSpecializedMinion(minion.id, minion.owner);
+        Object.assign(minionInstance, minion);
+        
+        // Restore movement config
+        if (config.movement) {
+            minionInstance.movement = config.movement;
+        }
+        
+        // Get valid moves (shows realistic range, but clicking anywhere will still work)
+        const validMoves = minionInstance.getValidMoves(this.gameState);
+        this.boardUI.highlightMoves(validMoves);
+        
+        // Show attack range preview and valid attacks if available
+        if (config.attack && !config.cannotAttack) {
+            // Show attack range pattern (like normal gameplay)
+            const attackPreview = this.minionLoader.getAttackPreview(minion, this.gameState);
+            if (attackPreview) {
+                this.boardUI.highlightAttackPreview(attackPreview);
+            }
+            
+            // Show actual enemy targets
+            const validAttacks = minionInstance.getValidAttacks(this.gameState);
+            this.boardUI.highlightAttacks(validAttacks);
+        }
+        
+        // Show ability targets if available
+        if (config.abilities && config.abilities.length > 0) {
+            for (const ability of config.abilities) {
+                const targets = this.abilitySystem.getValidTargets(minion, ability);
+                if (targets.length > 0) {
+                    this.boardUI.highlightAbilityTargets(targets);
+                    this.currentAbility = ability;
+                    this.sandboxAbilityMode = true;
+                }
+            }
+        }
     }
 
     showCustomOnlineMenu() {
