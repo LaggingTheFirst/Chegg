@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rank Display - Chegg</title>
+    
+    <!-- Open Graph / Discord Embed -->
+    <meta property="og:title" content="Chegg - Rank System">
+    <meta property="og:description" content="From Iron to The Eye - Explore all ranks and their ELO requirements in Chegg, a strategic auto-battler game.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://hydrophobis.github.io/Chegg/assets/leaderboard/eye.png">
+    <meta property="og:url" content="https://hydrophobis.github.io/Chegg/ranks-display.html">
+    <meta name="theme-color" content="#a855f7">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Chegg - Rank System">
+    <meta name="twitter:description" content="From Iron to The Eye - Explore all ranks and their ELO requirements in Chegg, a strategic auto-battler game.">
+    <meta name="twitter:image" content="https://hydrophobis.github.io/Chegg/assets/leaderboard/eye.png">
+    
+    <link rel="stylesheet" href="styles/game.css">
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-panel: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #475569;
+            --mana-color: #3b82f6;
+            --player-blue: #60a5fa;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--mana-color), var(--player-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .tier-section {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .tier-header {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .rank-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .rank-card {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .rank-icon {
+            width: 64px;
+            height: 64px;
+            image-rendering: pixelated;
+            flex-shrink: 0;
+        }
+
+        .rank-info {
+            flex: 1;
+        }
+
+        .rank-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .rank-elo {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .special-rank {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(139, 92, 246, 0.1));
+            border-color: #a855f7;
+        }
+
+        .special-rank .rank-icon {
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chegg Rank System</h1>
+        <div class="subtitle">All ranks and their ELO requirements</div>
+        
+        <div id="ranks-container"></div>
+    </div>
+
+    <script type="module">
+        import { RankSystem } from './js/ui/RankSystem.js';
+
+        const rankSystem = new RankSystem();
+        await rankSystem.load();
+
+        const container = document.getElementById('ranks-container');
+        const tiers = rankSystem.getAllTiers();
+
+        tiers.forEach(tier => {
+            const section = document.createElement('div');
+            section.className = 'tier-section';
+
+            const header = document.createElement('div');
+            header.className = 'tier-header';
+            header.style.color = tier.color;
+            header.textContent = tier.tier;
+            section.appendChild(header);
+
+            const grid = document.createElement('div');
+            grid.className = 'rank-grid';
+
+            tier.subdivisions.forEach(rank => {
+                const card = document.createElement('div');
+                card.className = 'rank-card';
+                
+                // Special styling for The End tier
+                if (tier.tier === 'The End') {
+                    card.classList.add('special-rank');
+                }
+
+                const icon = document.createElement('img');
+                icon.src = rank.image;
+                icon.alt = rank.name;
+                icon.className = 'rank-icon';
+                card.appendChild(icon);
+
+                const info = document.createElement('div');
+                info.className = 'rank-info';
+
+                const name = document.createElement('div');
+                name.className = 'rank-name';
+                name.style.color = tier.color;
+                name.textContent = rank.name;
+                info.appendChild(name);
+
+                const elo = document.createElement('div');
+                elo.className = 'rank-elo';
+                if (rank.maxElo >= 9999) {
+                    elo.textContent = `${rank.minElo}+ ELO`;
+                } else {
+                    elo.textContent = `${rank.minElo} - ${rank.maxElo} ELO`;
+                }
+                info.appendChild(elo);
+
+                card.appendChild(info);
+                grid.appendChild(card);
+            });
+
+            section.appendChild(grid);
+            container.appendChild(section);
+        });
+
+        // Add The Eye as a special section at the bottom
+        const eyeSection = document.createElement('div');
+        eyeSection.className = 'tier-section';
+        eyeSection.style.marginTop = '40px';
+        eyeSection.style.background = 'linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(139, 92, 246, 0.1))';
+        eyeSection.style.borderColor = '#a855f7';
+        eyeSection.style.boxShadow = '0 0 20px rgba(168, 85, 247, 0.3)';
+
+        const eyeHeader = document.createElement('div');
+        eyeHeader.className = 'tier-header';
+        eyeHeader.style.color = '#a855f7';
+        eyeHeader.style.fontSize = '2.5rem';
+        eyeHeader.style.textShadow = '0 0 20px rgba(168, 85, 247, 0.5)';
+        eyeHeader.textContent = 'The Eye';
+        eyeSection.appendChild(eyeHeader);
+
+        const eyeGrid = document.createElement('div');
+        eyeGrid.className = 'rank-grid';
+        eyeGrid.style.justifyContent = 'center';
+
+        const eyeCard = document.createElement('div');
+        eyeCard.className = 'rank-card';
+        eyeCard.style.background = 'rgba(168, 85, 247, 0.1)';
+        eyeCard.style.borderColor = '#a855f7';
+        eyeCard.style.boxShadow = '0 0 15px rgba(168, 85, 247, 0.3)';
+        eyeCard.style.minWidth = '400px';
+
+        const eyeIcon = document.createElement('img');
+        eyeIcon.src = 'assets/leaderboard/eye.png';
+        eyeIcon.alt = 'The Eye';
+        eyeIcon.className = 'rank-icon';
+        eyeIcon.style.width = '80px';
+        eyeIcon.style.height = '80px';
+        eyeIcon.style.filter = 'drop-shadow(0 0 12px rgba(168, 85, 247, 0.6))';
+        eyeCard.appendChild(eyeIcon);
+
+        const eyeInfo = document.createElement('div');
+        eyeInfo.className = 'rank-info';
+
+        const eyeName = document.createElement('div');
+        eyeName.className = 'rank-name';
+        eyeName.style.color = '#a855f7';
+        eyeName.style.fontSize = '1.5rem';
+        eyeName.style.textShadow = '0 0 10px rgba(168, 85, 247, 0.5)';
+        eyeName.textContent = 'The Eye';
+        eyeInfo.appendChild(eyeName);
+
+        const eyeElo = document.createElement('div');
+        eyeElo.className = 'rank-elo';
+        eyeElo.style.fontSize = '1rem';
+        eyeElo.textContent = 'Exclusive to the current Global Top 3 \'The End\' Rated players';
+        eyeInfo.appendChild(eyeElo);
+
+        eyeCard.appendChild(eyeInfo);
+        eyeGrid.appendChild(eyeCard);
+        eyeSection.appendChild(eyeGrid);
+        container.appendChild(eyeSection);
+    </script>
+</body>
+</html>
