@@ -610,7 +610,8 @@
                 standings.forEach(s => {
                     const rankDiv = document.getElementById(`rank-${s.username}`);
                     if (rankDiv) {
-                        if (s.elo >= 2000) {
+                        // Only show "The Eye" text for players in The End tier (4000+ ELO)
+                        if (s.elo >= 4000) {
                             rankDiv.innerHTML = '<div style="display: inline-flex; align-items: center; gap: 6px;"><img src="assets/leaderboard/eye.png" alt="The Eye" style="width: 24px; height: 24px; image-rendering: pixelated;"><span style="color: #a855f7; font-weight: 600;">The Eye</span></div>';
                         } else {
                             const rankHTML = window.rankSystem.getRankHTML(s.elo, { size: 24, showName: true });
