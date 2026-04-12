@@ -391,8 +391,8 @@
                 
                 const tierTd = document.createElement('td');
                 if (rankSystem.loaded) {
-                    if (globalRank <= 3) {
-                        // Show eye icon for top 3, but only show "The Eye" text if they're in The End tier (4000+ ELO)
+                    // Only show eye icon for players in The End tier (4000+ ELO)
+                    if (player.elo >= 4000) {
                         const eyeBadge = document.createElement('div');
                         eyeBadge.className = 'rank-badge';
                         eyeBadge.style.display = 'inline-flex';
@@ -407,23 +407,11 @@
                         eyeImg.style.imageRendering = 'pixelated';
                         eyeBadge.appendChild(eyeImg);
                         
-                        // Only show "The Eye" text if player is in The End tier (4000+ ELO)
-                        if (player.elo >= 4000) {
-                            const nameSpan = document.createElement('span');
-                            nameSpan.textContent = 'The Eye';
-                            nameSpan.style.color = '#a855f7';
-                            nameSpan.style.fontWeight = 'bold';
-                            eyeBadge.appendChild(nameSpan);
-                        } else {
-                            // Show their actual rank name
-                            const rankName = rankSystem.getRankName(player.elo);
-                            const rankColor = rankSystem.getRankColor(player.elo);
-                            const nameSpan = document.createElement('span');
-                            nameSpan.textContent = rankName;
-                            nameSpan.style.color = rankColor;
-                            nameSpan.style.fontWeight = 'bold';
-                            eyeBadge.appendChild(nameSpan);
-                        }
+                        const nameSpan = document.createElement('span');
+                        nameSpan.textContent = 'The Eye';
+                        nameSpan.style.color = '#a855f7';
+                        nameSpan.style.fontWeight = 'bold';
+                        eyeBadge.appendChild(nameSpan);
                         
                         tierTd.appendChild(eyeBadge);
                     } else {

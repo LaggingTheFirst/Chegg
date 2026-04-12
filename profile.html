@@ -153,7 +153,8 @@
 
             const rankDiv = document.getElementById('profileRank');
             if (rankSystem.loaded) {
-                if (player.rank <= 3) {
+                // Only show eye icon for players in The End tier (4000+ ELO)
+                if (player.elo >= 4000) {
                     rankDiv.innerHTML = '<div style="display: inline-flex; align-items: center; justify-content: center;"><img src="assets/leaderboard/eye.png" alt="The Eye" style="width: clamp(48px, 10vw, 80px); height: clamp(48px, 10vw, 80px); image-rendering: pixelated;"></div>';
                 } else {
                     const rankHTML = rankSystem.getRankHTML(player.elo, { size: 64, showName: false });
