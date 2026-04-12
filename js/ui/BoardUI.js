@@ -205,12 +205,15 @@ export class BoardUI {
     }
 
     highlightAbilityTargets(positions) {
+        console.log('[BoardUI] Highlighting ability targets:', positions);
         for (const pos of positions) {
             const row = pos.row !== undefined ? pos.row : pos.minion?.position?.row;
             const col = pos.col !== undefined ? pos.col : pos.minion?.position?.col;
+            console.log('[BoardUI] Highlighting tile at', row, col);
             if (row !== undefined && col !== undefined) {
                 const tile = this.tiles[row][col];
                 tile.classList.add('highlight-ability');
+                console.log('[BoardUI] Added highlight-ability class to tile', row, col);
             }
         }
     }

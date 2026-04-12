@@ -83,8 +83,8 @@ export class AbilitySystem {
             cost: 0,
             description: 'Copy the attack pattern of an adjacent minion',
 
-            getValidSources: (minion, gameState) => {
-                const sources = [];
+            getValidTargets: (minion, gameState) => {
+                const targets = [];
                 const { row, col } = minion.position;
 
                 for (const dir of Board.DIRECTIONS.surrounding) {
@@ -92,26 +92,28 @@ export class AbilitySystem {
                     const c = col + dir.col;
                     const adjacent = gameState.getMinionAt(r, c);
 
-                    if (adjacent && adjacent.attack) {
-                        sources.push({
+                    if (adjacent && adjacent.attack && !adjacent.cannotAttack) {
+                        targets.push({
                             minion: adjacent,
-                            attackPattern: adjacent.attack
+                            row: r,
+                            col: c
                         });
                     }
                 }
 
-                return sources;
+                return targets;
             },
 
-            getAttacksWithPattern: (minion, attackPattern, gameState) => {
-                return Board.getValidAttacks(
-                    gameState,
-                    minion.position.row,
-                    minion.position.col,
-                    attackPattern.pattern,
-                    attackPattern.range,
-                    minion.owner
-                );
+            execute: (minion, target, gameState) => {
+                if (!target.minion || !target.minion.attack) return false;
+
+                // Copy the attack pattern from the target minion
+                minion.attack = { ...target.minion.attack };
+                minion.copiedAttackFrom = target.minion.id;
+                
+                console.log(`[Parrot] Copied attack from ${target.minion.name}:`, minion.attack);
+                
+                return true;
             }
         });
 
@@ -298,9 +300,15 @@ export class AbilitySystem {
 
     getValidTargets(minion, abilityId) {
         const ability = this.get(abilityId);
-        if (!ability || !ability.getValidTargets) return [];
+        console.log('[AbilitySystem] Getting targets for ability:', abilityId, 'ability found:', !!ability);
+        if (!ability || !ability.getValidTargets) {
+            console.log('[AbilitySystem] No ability or no getValidTargets method');
+            return [];
+        }
 
-        return ability.getValidTargets(minion, this.gameState);
+        const targets = ability.getValidTargets(minion, this.gameState);
+        console.log('[AbilitySystem] Targets found:', targets);
+        return targets;
     }
 }
 

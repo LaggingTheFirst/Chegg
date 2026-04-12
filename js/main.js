@@ -950,7 +950,11 @@ class CheggGame {
     handleMinionClick(minion, row, col) {
         if (this.isSpectator()) return;
         if (this.isOnline && this.gameState.currentPlayer !== this.playerColor) return;
+        
+        console.log('[handleMinionClick] Mode:', this.mode, 'Clicked minion:', minion.id, 'at', row, col);
+        
         if (this.mode === 'selectingAbility') {
+            console.log('[handleMinionClick] Executing ability on minion');
             this.executeAbility(minion, row, col);
             return;
         }
@@ -1020,7 +1024,9 @@ class CheggGame {
 
     checkAndShowAbilityTargets(minion, config) {
         for (const ability of config.abilities) {
+            console.log('[Ability] Checking ability:', ability, 'for minion:', minion.id);
             const targets = this.abilitySystem.getValidTargets(minion, ability);
+            console.log('[Ability] Valid targets:', targets);
             if (targets.length > 0) {
                 this.boardUI.highlightAbilityTargets(targets);
                 this.currentAbility = ability;
