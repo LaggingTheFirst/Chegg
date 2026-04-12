@@ -869,6 +869,21 @@ class CheggGame {
         if (turnText) turnText.textContent = `${currentPlayerName}'s Turn`;
         if (turnNumber) turnNumber.textContent = `Turn ${this.gameState.turnNumber}`;
 
+        // Update end turn button state
+        const endTurnBtn = document.getElementById('btn-end-turn');
+        if (endTurnBtn && this.isOnline) {
+            const isMyTurn = this.gameState.currentPlayer === this.playerColor;
+            if (isMyTurn) {
+                endTurnBtn.classList.remove('secondary');
+                endTurnBtn.classList.add('primary');
+                endTurnBtn.disabled = false;
+            } else {
+                endTurnBtn.classList.remove('primary');
+                endTurnBtn.classList.add('secondary');
+                endTurnBtn.disabled = true;
+            }
+        }
+
         this.updateActionHint();
     }
 
@@ -1267,6 +1282,12 @@ class CheggGame {
     performAttack(attacker, row, col) {
         if (!this.turnManager.canMinionAttack(attacker)) {
             this.setHint('this minion cannot attack right now');
+            return false;
+        }
+
+        // Client-side check: prevent attacking twice
+        if (attacker.hasAttacked) {
+            this.setHint('this minion has already attacked');
             return false;
         }
 
