@@ -56,7 +56,7 @@ export class InfoPanel {
         this.panelElement.innerHTML = `
             <div class="player-name ${this.player}">${playerName}${playerElo}</div>
             
-            <div class="panel-timer" id="timer-${this.player}" style="font-family: monospace; font-size: 1.2rem; font-weight: 800; text-align: center; margin: 10px 0; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px;">
+            <div class="panel-timer" id="timer-${this.player}" style="font-family: monospace; font-size: 1.2rem; font-weight: 800; text-align: center; margin: 10px 0; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 0px;">
                 0:00
             </div>
 
@@ -69,7 +69,7 @@ export class InfoPanel {
             </div>
             
             <div class="deck-info">
-                <div class="deck-icon"><img src="assets/box.png" alt="Box" style="width: 30px; height: 30px;"></div>
+                <div class="deck-icon"><img src="assets/box.png" alt="Box" style="width: 32px; height: 32px;"></div>
                 <div>
                     <div class="deck-count">${deckCount}</div>
                     <div class="deck-label">Cards in Deck</div>
@@ -77,7 +77,7 @@ export class InfoPanel {
             </div>
             
             <div class="deck-info">
-                <div class="deck-icon"><img src="assets/shelf.png" alt="Hand" style="width: 30px; height: 30px;"></div>
+                <div class="deck-icon"><img src="assets/shelf.png" alt="Hand" style="width: 32px; height: 32px;"></div>
                 <div>
                     <div class="deck-count">${handCount}</div>
                     <div class="deck-label">Cards in Hand</div>
@@ -86,7 +86,7 @@ export class InfoPanel {
             
             ${playerData.catBonusMana > 0 ? `
             <div class="deck-info" style="background: rgba(168, 85, 247, 0.2);">
-                <div class="deck-icon"><img src="assets/minions/cat.png" alt="Cat" style="width: 30px; height: 30px;"></div>
+                <div class="deck-icon"><img src="assets/minions/cat.png" alt="Cat" style="width: 32px; height: 32px;"></div>
                 <div>   
                     <div class="deck-count">+${playerData.catBonusMana}</div>
                     <div class="deck-label">Cat Bonus Mana</div>

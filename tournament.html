@@ -11,11 +11,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <link rel="stylesheet" href="Minecraft-CSS/dist/minecraft-css-framework-v-1.0.0.css">
+    
     <link rel="stylesheet" href="styles/game.css">
     
     <style>
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            /* font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; */
             background: var(--bg-dark);
             color: var(--text-primary);
             min-height: 100vh;
@@ -35,7 +37,7 @@
             padding: 10px 20px;
             background: var(--bg-card);
             border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 0px;
             color: var(--text-secondary);
             text-decoration: none;
             font-weight: 600;
@@ -106,7 +108,7 @@
         .tournament-card {
             background: var(--bg-card);
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 0px;
             padding: 20px;
             margin-bottom: 16px;
             transition: all var(--transition-smooth);
@@ -134,7 +136,7 @@
 
         .tournament-status {
             padding: 6px 12px;
-            border-radius: 6px;
+            border-radius: 0px;
             font-size: 0.85rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -168,7 +170,7 @@
         .create-form {
             background: var(--bg-card);
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 0px;
             padding: 24px;
             margin-bottom: 24px;
         }
@@ -189,9 +191,9 @@
             padding: 12px;
             background: var(--bg-panel);
             border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 0px;
             color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            /* font-family: 'Inter', sans-serif; */
         }
 
         .form-group input:focus, .form-group select:focus {
@@ -202,7 +204,7 @@
         .detail-view {
             background: var(--bg-card);
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 0px;
             padding: 24px;
         }
 
@@ -244,7 +246,7 @@
         .pairing-card {
             background: var(--bg-panel);
             border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 0px;
             padding: 16px;
         }
 
@@ -289,8 +291,8 @@
         <!-- <div class="subtitle">Swiss-Style Competitive Play</div> -->
 
         <div class="tabs">
-            <button class="tab active" data-tab="browse">Upcoming Tournaments</button>
-            <button class="tab" data-tab="my">My Tournaments</button>
+            <button class="tab active" data-tab="browse" style="font-family: MinecraftRegular;">Upcoming Tournaments</button>
+            <button class="tab" data-tab="my" style="font-family: MinecraftRegular;">My Tournaments</button>
         </div>
 
         <div id="browse-tab" class="tab-content active">
@@ -539,9 +541,9 @@
                 if (myMatch && !myMatch.completed && myMatch.player2 !== null) {
                     html += `<button class="action-btn primary" onclick="joinMatch('${tournament.id}')">Join My Match</button>`;
                 } else if (myMatch && myMatch.player2 === null) {
-                    html += `<div style="padding: 12px; background: rgba(34, 197, 94, 0.15); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 8px; color: #22c55e; margin: 12px 0;">You have a bye this round (automatic win)</div>`;
+                    html += `<div style="padding: 12px; background: rgba(34, 197, 94, 0.15); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 0px;">`
                 } else if (myMatch && myMatch.completed) {
-                    html += `<div style="padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px; color: var(--text-secondary); margin: 12px 0;">Your match is complete. Waiting for other matches...</div>`;
+                    html += `<div style="padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 0px;">`
                 }
             }
             

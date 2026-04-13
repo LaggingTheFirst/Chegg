@@ -47,7 +47,7 @@ export class DeckBuilder {
                     <div class="minion-pool" id="minion-pool"></div>
                 </div>
                 
-                <div class="deck-preview">
+                <div class="deck-preview" style="width: 90%;">
                     <div class="mana-label">Your Deck (<span id="deck-count">0</span>/15)</div>
                     <div class="deck-slots" id="deck-slots"></div>
                     
@@ -288,7 +288,7 @@ export class DeckBuilder {
                             width: 20px; 
                             height: ${count * 15}px; 
                             background: var(--mana-color);
-                            border-radius: 3px;
+                            border-radius: 0px;
                             min-height: 4px;
                         "></div>
                         <span style="font-size: 0.7rem; color: var(--text-muted);">${cost}</span>

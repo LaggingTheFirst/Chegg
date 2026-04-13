@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <!-- Minecraft CSS Framework -->
+    <link rel="stylesheet" href="Minecraft-CSS/dist/minecraft-css-framework-v-1.0.0.css">
+    
     <!-- Game Styles -->
     <link rel="stylesheet" href="styles/game.css">
     
@@ -37,7 +40,7 @@
             padding: 10px 20px;
             background: var(--bg-card);
             border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 0px;
             color: var(--text-secondary);
             text-decoration: none;
             font-weight: 600;
@@ -72,7 +75,7 @@
         .warning {
             background: rgba(251, 191, 36, 0.15);
             border: 2px solid rgba(251, 191, 36, 0.3);
-            border-radius: 12px;
+            border-radius: 0px;
             padding: 16px;
             margin-bottom: 24px;
             color: #fbbf24;
@@ -93,7 +96,7 @@
             padding: 12px 20px;
             background: var(--bg-card);
             border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 0px;
             color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             font-size: 0.95rem;
@@ -148,7 +151,7 @@
         .stat-card {
             background: var(--bg-card);
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 0px;
             padding: 20px;
             text-align: center;
             transition: all var(--transition-smooth);
@@ -179,7 +182,7 @@
         .table-container {
             background: var(--bg-card);
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 0px;
             overflow: hidden;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
         }
@@ -237,30 +240,39 @@
             color: var(--player-red);
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.9);
+        /* Admin modal styles - override Minecraft CSS framework */
+        body .modal {
+            display: none !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: auto !important;
+            transform: none !important;
+            background: rgba(0, 0, 0, 0.9) !important;
             backdrop-filter: blur(4px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
+            z-index: 1000 !important;
+            padding: 16px !important;
         }
 
-        .modal.active {
-            display: flex;
+        body .modal.active {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
-        .modal-content {
-            background: var(--bg-card);
-            border: 2px solid var(--border);
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        body .modal-content {
+            background: var(--bg-card) !important;
+            border: 2px solid var(--border) !important;
+            border-radius: 0px !important;
+            padding: 32px !important;
+            max-width: 500px !important;
+            width: 100% !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6) !important;
+            margin: auto !important;
+            position: relative !important;
+            transform: none !important;
         }
 
         .modal-title {
@@ -289,7 +301,7 @@
             padding: 12px 16px;
             background: var(--bg-panel);
             border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 0px;
             color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             font-size: 1rem;
@@ -339,11 +351,11 @@
             <span>Back to Game</span>
         </a>
         
-        <h1>🔒 Admin Panel</h1>
+        <h1>Admin Panel</h1>
         <div class="subtitle">Player Database Management</div>
 
         <div class="warning">
-            ⚠️ Warning: Powerful admin tools - use with caution
+            Warning: Powerful admin tools - use with caution
         </div>
 
         <div class="stats" id="stats">

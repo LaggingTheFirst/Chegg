@@ -11,13 +11,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <link rel="stylesheet" href="Minecraft-CSS/dist/minecraft-css-framework-v-1.0.0.css">
+    
     <link rel="stylesheet" href="styles/game.css">
 </head>
 <body style="padding: clamp(12px, 3vw, 24px); background: var(--bg-dark); color: var(--text-primary); font-family: 'Inter', sans-serif;">
     <div style="max-width: 1200px; margin: 0 auto;">
         <!-- Header -->
         <div style="margin-bottom: 24px;">
-            <a href="admin.html" style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 20px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; color: var(--text-secondary); text-decoration: none; font-weight: 600; transition: all var(--transition-smooth); font-size: 0.9rem;">
+            <a href="admin.html" style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 20px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 0px;">
                 <span>←</span>
                 <span>Back to Admin</span>
             </a>
@@ -26,31 +28,31 @@
         </div>
 
         <!-- Create Tournament Card -->
-        <div style="background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);">
+        <div style="background: var(--bg-card); border: 2px solid var(--border); border-radius: 0px;">
             <h2 style="margin: 0 0 20px 0; font-size: 1.5rem; color: var(--text-primary);">Create New Tournament</h2>
             
             <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 6px; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">Tournament Name</label>
-                <input type="text" id="name" placeholder="Weekly Championship" style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.95rem;">
+                <input type="text" id="name" placeholder="Weekly Championship" style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 0px;">
             </div>
             
             <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 6px; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">Description</label>
-                <textarea id="description" placeholder="Join us for an exciting tournament..." style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.95rem; min-height: 80px; resize: vertical;"></textarea>
+                <textarea id="description" placeholder="Join us for an exciting tournament..." style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 0px;"></textarea>
             </div>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
                 <div>
                     <label style="display: block; margin-bottom: 6px; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">Rounds</label>
-                    <input type="number" id="rounds" value="5" min="1" max="10" style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.95rem;">
+                    <input type="number" id="rounds" value="5" min="1" max="10" style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 0px;">
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 6px; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">Time Control (seconds)</label>
-                    <input type="number" id="timeControl" value="900" min="60" step="60" style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.95rem;">
+                    <input type="number" id="timeControl" value="900" min="60" step="60" style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 0px;">
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 6px; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;">Scheduled Start</label>
-                    <input type="datetime-local" id="scheduledStart" style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.95rem;">
+                    <input type="datetime-local" id="scheduledStart" style="width: 100%; padding: 12px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 0px;">
                 </div>
             </div>
             
@@ -58,7 +60,7 @@
         </div>
 
         <!-- Tournaments List -->
-        <div style="background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);">
+        <div style="background: var(--bg-card); border: 2px solid var(--border); border-radius: 0px;">
             <h2 style="margin: 0 0 20px 0; font-size: 1.5rem; color: var(--text-primary);">Manage Tournaments</h2>
             <div id="tournaments-list">
                 <div class="loading" style="text-align: center; padding: 40px; color: var(--text-secondary);">Loading tournaments...</div>
@@ -99,12 +101,12 @@
                     const colors = statusColors[t.status] || statusColors.registration;
                     
                     return `
-                        <div style="background: var(--bg-panel); border: 2px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+                        <div style="background: var(--bg-panel); border: 2px solid var(--border); border-radius: 0px;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; flex-wrap: wrap;">
                                 <div style="flex: 1; min-width: 250px;">
                                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
                                         <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-primary);">${t.name}</h3>
-                                        <span style="display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; background: ${colors.bg}; color: ${colors.text}; border: 1px solid ${colors.border};">${t.status}</span>
+                                        <span style="display: inline-block; padding: 4px 12px; border-radius: 0px;">${t.status}</span>
                                     </div>
                                     <div style="color: var(--text-secondary); font-size: 0.9rem;">
                                         ${t.participants} players • Round ${t.currentRound}/${t.rounds} • Created ${new Date(t.createdAt).toLocaleDateString()}

@@ -52,7 +52,7 @@ export class ModManagerUI {
                     <button class="close-btn" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">&times;</button>
                 </div>
 
-                <div class="mod-list-container" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; margin-bottom: 20px;">
+                <div class="mod-list-container" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 0px;">
                     <!-- content goes here -->
                 </div>
 
@@ -118,7 +118,7 @@ export class ModManagerUI {
         } else {
             html += `<div style="display: flex; flex-direction: column; gap: 8px;">
                 ${minions.map(m => `
-                    <div style="display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 4px;">
+                    <div style="display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 0px;">
                         <span style="color: #10b981; margin-right: 10px;">✅</span>
                         <div>
                             <div style="font-weight: 500;">${m.name}</div>
@@ -136,7 +136,7 @@ export class ModManagerUI {
         } else {
             html += `<div style="display: flex; flex-direction: column; gap: 8px;">
                 ${abilities.map(a => `
-                    <div style="display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 4px;">
+                    <div style="display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 0px;">
                         <span style="color: #10b981; margin-right: 10px;">✅</span>
                         <div>
                             <div style="font-weight: 500;">${a.name}</div>
@@ -153,7 +153,7 @@ export class ModManagerUI {
                 <h3 style="margin-top: 0; font-size: 1rem;">Load from URL</h3>
                 <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                     <input type="text" id="external-mod-url" placeholder="https://example.com/mod.json" 
-                        style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 4px; font-family: inherit;">
+                        style="flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 0px;">
                     <button class="action-btn primary" id="btn-load-external" style="padding: 8px 16px;">Load</button>
                 </div>
                 <div style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
@@ -169,7 +169,7 @@ export class ModManagerUI {
                     <h4 style="margin-bottom: 8px; font-size: 0.85rem; color: var(--text-secondary);">External Sources</h4>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
                         ${this.modManager.externalUrls.map(url => `
-                            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 0px;">
                                 <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px; color: var(--text-muted);">${url}</span>
                                 <button class="remove-external-btn" data-url="${url}" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 2px 8px;">Remove</button>
                             </div>

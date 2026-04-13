@@ -100,69 +100,64 @@ class CheggGame {
     }
 
     showStartScreen() {
-        const overlay = createModalOverlay({ id: 'start-screen' });
+        const container = document.getElementById('game-container');
         const aiDifficulty = this.aiDifficulty;
 
-        overlay.innerHTML = `
-            <div class="modal" style="text-align: center; max-width: 450px;">
-                <div class="modal-title" style="font-size: 2.5rem; margin-bottom: 8px;">
-                    CHEGG
-                </div>
-                <div style="color: var(--text-secondary); margin-bottom: 24px;">
-                    A turn based & deck building strategy game
-                </div>
-                
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <button class="action-btn primary" id="btn-custom-local" style="width: 100%; padding: 12px;">
-                        Play Local Game
-                    </button>
-                    <button class="action-btn primary" id="btn-matchmaking" style="width: 100%; padding: 12px;">
-                        Find Online Match
-                    </button>
-                    <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-                        <button class="action-btn primary" id="btn-vs-ai" style="flex: 1; padding: 12px;">
-                            Play vs AI
+        container.innerHTML = `
+            <div class="start-screen-container">
+                <div class="start-screen-content">
+                    <div class="start-screen-title">CHEGG</div>
+                    <div class="start-screen-subtitle">A turn based & deck building strategy game</div>
+                    
+                    <div class="start-screen-buttons">
+                        <button class="action-btn primary" id="btn-custom-local">
+                            Play Local Game
                         </button>
-                        <select id="ai-difficulty" class="action-btn secondary" style="width: 140px; text-align: left; cursor: pointer; padding: 12px 8px;">
-                            <option value="cautious" ${aiDifficulty === 'cautious' ? 'selected' : ''}>Cautious</option>
-                            <option value="balanced" ${aiDifficulty === 'balanced' ? 'selected' : ''}>Balanced</option>
-                            <option value="aggressive" ${aiDifficulty === 'aggressive' ? 'selected' : ''}>Aggressive</option>
-                        </select>
+                        <button class="action-btn primary" id="btn-matchmaking">
+                            Find Online Match
+                        </button>
+                        <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+                            <button class="action-btn primary" id="btn-vs-ai" style="flex: 1; width: 45%;">
+                                Play vs AI
+                            </button>
+                            <select id="ai-difficulty" class="action-btn secondary" style="width: 45%; text-align: left; cursor: pointer;">
+                                <option value="cautious" ${aiDifficulty === 'cautious' ? 'selected' : ''}>Cautious</option>
+                                <option value="balanced" ${aiDifficulty === 'balanced' ? 'selected' : ''}>Balanced</option>
+                                <option value="aggressive" ${aiDifficulty === 'aggressive' ? 'selected' : ''}>Aggressive</option>
+                            </select>
+                        </div>
+                        <button class="action-btn secondary" id="btn-custom-online">
+                            Sandbox Mode
+                        </button>
+                        <button class="action-btn secondary" id="btn-profile">
+                            My Profile
+                        </button>
+                        <button class="action-btn secondary" id="btn-leaderboard">
+                            Leaderboard
+                        </button>
+                        <button class="action-btn secondary" id="btn-tournaments">
+                            Tournaments
+                        </button>
+                        <button class="action-btn secondary" id="btn-custom-decks">
+                            Deck Manager
+                        </button>
+                        <button class="action-btn secondary" id="btn-mods">
+                            Mod Manager (${this.modManager.getLoadedMods().minions.length + this.modManager.getLoadedMods().abilities.length})
+                        </button>
                     </div>
-                    <button class="action-btn secondary" id="btn-custom-online" style="width: 100%; padding: 12px;">
-                        Sandbox Mode
-                    </button>
-                    <button class="action-btn secondary" id="btn-profile" style="width: 100%; padding: 12px;">
-                        My Profile
-                    </button>
-                    <button class="action-btn secondary" id="btn-leaderboard" style="width: 100%; padding: 12px;">
-                        Leaderboard
-                    </button>
-                    <button class="action-btn secondary" id="btn-tournaments" style="width: 100%; padding: 12px;">
-                        Tournaments
-                    </button>
-                    <button class="action-btn secondary" id="btn-custom-decks" style="width: 100%; padding: 12px;">
-                        Deck Manager
-                    </button>
-                    <button class="action-btn secondary" id="btn-mods" style="width: 100%; padding: 12px;">
-                        Mod Manager (${this.modManager.getLoadedMods().minions.length + this.modManager.getLoadedMods().abilities.length})
-                    </button>
-                </div>
-                
-                <div style="margin-top: 24px; font-size: 0.75rem; color: var(--text-muted);">
-                    <p>Designed by Gerg • JS version • <a href="https://docs.google.com/document/d/1TM736HhNsh2nz8l3L-a6PuWAVxbnBSF__NB7qX7Wdlw/edit?tab=t.0" target="_blank">wtf are the rules?</a></p>
+                    
+                    <div class="start-screen-footer">
+                        <p>Designed by Gerg • Jiyath5516F/Minecraft-CSS • <a href="https://docs.google.com/document/d/1TM736HhNsh2nz8l3L-a6PuWAVxbnBSF__NB7qX7Wdlw/edit?tab=t.0" target="_blank">wtf are the rules?</a></p>
+                    </div>
                 </div>
             </div>
         `;
 
-        document.body.appendChild(overlay);
-
-        overlay.querySelector('#btn-custom-local').addEventListener('click', () => {
-            overlay.remove();
+        container.querySelector('#btn-custom-local').addEventListener('click', () => {
             this.startCustomLocalMatch();
         });
 
-        overlay.querySelector('#btn-matchmaking').addEventListener('click', () => {
+        container.querySelector('#btn-matchmaking').addEventListener('click', () => {
             if (!this.networkClient.authManager.isAuthenticated()) {
                 this.showProfileModal(() => this.startMatchmaking());
                 return;
@@ -170,45 +165,35 @@ class CheggGame {
             this.startMatchmaking();
         });
 
-        overlay.querySelector('#btn-custom-online').addEventListener('click', () => {
-            overlay.remove();
+        container.querySelector('#btn-custom-online').addEventListener('click', () => {
             this.startSandboxMode();
         });
 
-        overlay.querySelector('#btn-vs-ai').addEventListener('click', () => {
-            const aiDiffEl = overlay.querySelector('#ai-difficulty');
+        container.querySelector('#btn-vs-ai').addEventListener('click', () => {
+            const aiDiffEl = container.querySelector('#ai-difficulty');
             const selectedDifficulty = aiDiffEl ? aiDiffEl.value : this.aiDifficulty;
             this.setAiDifficulty(selectedDifficulty);
-            overlay.remove();
             this.startAiGame(selectedDifficulty);
         });
 
-        const btnProfile = overlay.querySelector('#btn-profile');
+        const btnProfile = container.querySelector('#btn-profile');
         btnProfile.addEventListener('click', () => {
             this.showProfileModal();
         });
 
-        overlay.querySelector('#btn-leaderboard').addEventListener('click', () => {
+        container.querySelector('#btn-leaderboard').addEventListener('click', () => {
             window.location.href = 'leaderboard.html';
         });
 
-        overlay.querySelector('#btn-tournaments').addEventListener('click', () => {
+        container.querySelector('#btn-tournaments').addEventListener('click', () => {
             window.location.href = 'tournament.html';
         });
 
-        const btnAdmin = overlay.querySelector('#btn-admin');
-        if (btnAdmin) {
-            btnAdmin.addEventListener('click', () => {
-                window.location.href = 'admin.html';
-            });
-        }
-
-        overlay.querySelector('#btn-custom-decks').addEventListener('click', () => {
-            overlay.remove();
+        container.querySelector('#btn-custom-decks').addEventListener('click', () => {
             this.startDeckBuilding();
         });
 
-        overlay.querySelector('#btn-mods').addEventListener('click', () => {
+        container.querySelector('#btn-mods').addEventListener('click', () => {
             this.modManagerUI.show();
         });
     }
@@ -244,17 +229,16 @@ class CheggGame {
             <header class="game-header">
                 <div class="game-title">SANDBOX MODE</div>
                 <div style="color: var(--text-secondary); font-size: 0.9rem;">Place and move minions freely</div>
+                <div class="header-actions">
+                    <button class="action-btn secondary btn-compact" id="btn-flip-board">Flip Board</button>
+                    <button class="action-btn secondary btn-compact" id="btn-clear-board">Clear Board</button>
+                    <button class="action-btn danger btn-compact" id="btn-exit-sandbox">Exit Sandbox</button>
+                </div>
             </header>
             
             <main class="game-main">
                 <div class="board-wrapper">
                     <div class="board-container" id="board-container"></div>
-                    
-                    <div class="action-bar">
-                        <button class="action-btn secondary" id="btn-flip-board">Flip Board</button>
-                        <button class="action-btn secondary" id="btn-clear-board">Clear Board</button>
-                        <button class="action-btn danger" id="btn-exit-sandbox">Exit Sandbox</button>
-                    </div>
                 </div>
             </main>
         `;
@@ -295,7 +279,7 @@ class CheggGame {
             top: 80px;
             background: var(--bg-card);
             border: 2px solid var(--border);
-            border-radius: 12px;
+            border-radius: 0px;
             padding: 16px;
             width: 280px;
             max-height: 80vh;
@@ -310,7 +294,7 @@ class CheggGame {
             
             <div style="margin-bottom: 12px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px;">Owner:</label>
-                <select id="sandbox-owner" style="width: 100%; padding: 8px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.85rem;">
+                <select id="sandbox-owner" style="width: 100%; padding: 8px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 0px;">
                     <option value="blue">Blue</option>
                     <option value="red">Red</option>
                 </select>
@@ -669,7 +653,7 @@ class CheggGame {
                 rooms.forEach(room => {
                     const roomEl = document.createElement('div');
                     roomEl.className = 'room-item';
-                    roomEl.style = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;';
+                    roomEl.style = 'display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 0px;'
                     roomEl.innerHTML = `
                         <div style="flex: 1;">
                             <div style="font-size: 0.85rem; font-weight: 600;">${room.name}</div>
@@ -792,6 +776,10 @@ class CheggGame {
                     <span id="turn-text">Blue's Turn</span>
                 </div>
                 <div class="turn-number" id="turn-number">Turn 1</div>
+                <div class="header-actions">
+                    <button class="action-btn secondary btn-compact" id="btn-cancel">Cancel</button>
+                    <button class="action-btn secondary btn-compact" id="btn-forfeit" style="display: none;">Forfeit</button>
+                </div>
             </header>
             
             <main class="game-main">
@@ -800,21 +788,16 @@ class CheggGame {
                 <div class="board-wrapper">
                     <div class="action-hint" id="action-hint"></div>
                     <div class="board-container" id="board-container"></div>
-                    
                     <div id="current-hand-container"></div>
-                    
-                    <div class="action-bar">
-                        <button class="action-btn secondary" id="btn-cancel">Cancel</button>
-                        <button class="action-btn secondary" id="btn-forfeit" style="display: none;">Forfeit</button>
-                        <button class="action-btn primary" id="btn-end-turn">End Turn</button>
-                    </div>
-                    
-                    <div id="room-info" style="text-align: center; margin-top: 8px; color: var(--text-muted); font-size: 0.75rem;"></div>
-                    <div id="turn-timer" style="text-align: center; font-weight: bold; color: var(--player-red); margin-top: 4px;"></div>
                 </div>
                 
                 <div id="red-panel-container"></div>
             </main>
+            
+            <button class="action-btn primary" id="btn-end-turn">End Turn</button>
+            
+            <div id="room-info" style="text-align: center; color: var(--text-muted); font-size: 0.75rem;"></div>
+            <div id="turn-timer" style="text-align: center; font-weight: bold; color: var(--player-red);"></div>
         `;
 
         this.boardUI = new BoardUI(this.gameState, '#board-container');
@@ -1526,11 +1509,14 @@ class CheggGame {
 
     startMatchmaking() {
         this.selectDeck((deck) => {
-            document.getElementById('start-screen').innerHTML = `
-                <div class="modal" style="text-align: center;">
-                    <div class="modal-title">Finding Match...</div>
-                    <div class="preloader-spinner" style="margin: 20px auto;"></div>
-                    <button class="action-btn secondary" onclick="window.location.reload()">Cancel</button>
+            const container = document.getElementById('game-container');
+            container.innerHTML = `
+                <div class="start-screen-container">
+                    <div class="start-screen-content" style="text-align: center;">
+                        <div class="start-screen-title" style="font-size: 2rem;">Finding Match...</div>
+                        <div class="preloader-spinner" style="margin: 20px auto;"></div>
+                        <button class="action-btn secondary" onclick="window.location.reload()" style="width: 100%;">Cancel</button>
+                    </div>
                 </div>
             `;
             this.networkClient.findMatch(deck);
@@ -1539,9 +1525,7 @@ class CheggGame {
 
 
     onServerStateUpdate(newStateData) {
-        if (document.getElementById('start-screen')) {
-            document.getElementById('start-screen').remove();
-        }
+        // No need to remove anything since we're using the game-container now
 
         if (!this.gameState) {
             this.startGame([], [], true);
@@ -1635,7 +1619,7 @@ class CheggGame {
             background: #ef4444;
             color: white;
             padding: 12px 20px;
-            border-radius: 8px;
+            border-radius: 0px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             z-index: 10000;
             font-weight: 600;
@@ -1664,7 +1648,7 @@ class CheggGame {
                 <div class="modal-title">Player Profile</div>
                 
                 ${isAuthenticated ? `
-                    <div style="background: linear-gradient(135deg, var(--mana-color), #a78bfa); padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
+                    <div style="background: linear-gradient(135deg, var(--mana-color), #a78bfa); padding: 20px; border-radius: 0px;">
                         <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Your Rating</div>
                         <div style="font-size: 3rem; font-weight: 800; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.3);">${elo}</div>
                         <div style="font-size: 0.85rem; color: rgba(255,255,255,0.9); margin-top: 4px;">ELO</div>
@@ -1689,7 +1673,7 @@ class CheggGame {
                         </div>
                     </div>
 
-                    <div style="background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3);">
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 0px;">
                         <p style="font-size: 0.7rem; color: var(--player-red);">
                             <strong>Warning:</strong> Pasting a new token will overwrite your current account!
                         </p>

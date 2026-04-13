@@ -1,36 +1,37 @@
-/* === CSS Variables === */
+html, body {
+    background: #0a0e1a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Ensure game container is visible */
+#game-container {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* === CSS Variables - Extended from Minecraft CSS === */
 @keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
 }
 
 :root {
-    /* Colors - Enhanced palette */
+    /* Game-specific colors */
     --bg-dark: #0a0e1a;
-    --bg-card: #1a1f2e;
-    --bg-panel: #141824;
+    --bg-card: var(--primary-color);
+    --bg-panel: var(--background-color);
     --bg-secondary: #0f1419;
-    --border: #2a3142;
-    --border-color: #2a3142;
+    --border: var(--secondary-color);
+    --border-color: var(--secondary-color);
 
-    /* Player Colors - More vibrant */
+    /* Player Colors */
     --player-blue: #3b82f6;
     --player-blue-light: #60a5fa;
     --player-blue-spawn: rgba(59, 130, 246, 0.25);
@@ -40,7 +41,7 @@
     --player-red-spawn: rgba(239, 68, 68, 0.25);
     --player-red-glow: rgba(239, 68, 68, 0.4);
 
-    /* Tile Colors - Better contrast */
+    /* Tile Colors */
     --tile-light: #1e2433;
     --tile-dark: #151a26;
 
@@ -55,7 +56,7 @@
     --mana-empty: #2d3142;
 
     /* Text */
-    --text-primary: #f1f5f9;
+    --text-primary: var(--text-color);
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
 
@@ -70,36 +71,11 @@
 }
 
 /* === Base Styles === */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-}
-
-*::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-*::-webkit-scrollbar-track {
-    background: var(--bg-dark);
-}
-
-*::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 4px;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted);
-}
-
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg-dark);
+    font-family: MinecraftRegular, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
+    background: var(--bg-dark) !important;
     min-height: 100vh;
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -124,6 +100,94 @@ a:hover {
     gap: clamp(8px, 2vw, 12px);
     min-height: 100vh;
     width: 100%;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+/* === Start Screen (Non-Modal) === */
+.start-screen-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+    padding: 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.start-screen-content {
+    background: var(--background-color);
+    border: 3px solid var(--secondary-color);
+    padding: 40px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.start-screen-title {
+    font-family: MinecraftTen, sans-serif !important;
+    font-size: clamp(3rem, 10vw, 5rem);
+    font-weight: 800;
+    text-align: center;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    letter-spacing: 8px;
+}
+
+.start-screen-subtitle {
+    font-family: MinecraftRegular, sans-serif;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 1.1rem;
+}
+
+.start-screen-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.start-screen-buttons .action-btn {
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 1.1rem;
+}
+
+.start-screen-footer {
+    margin-top: 32px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-family: MinecraftRegular, sans-serif;
+}
+
+.start-screen-footer a {
+    color: var(--player-blue);
+    text-decoration: underline;
+}
+
+.start-screen-footer a:hover {
+    color: var(--player-blue-light);
+}
+
+/* Preloader spinner for loading states */
+.preloader-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--secondary-color);
+    border-top-color: var(--mana-color);
+    border-radius: 0px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 /* === Header === */
@@ -131,21 +195,52 @@ a:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     width: 100%;
-    max-width: 1200px;
-    padding: clamp(8px, 2vw, 16px) clamp(12px, 3vw, 24px);
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    max-width: 100%;
+    padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 20px);
+    background: var(--background-color);
+    border: 3px solid var(--secondary-color);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    gap: 12px;
 }
 
 .game-title {
-    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    font-family: MinecraftTen, sans-serif !important;
+    font-size: clamp(1rem, 3vw, 1.4rem);
     font-weight: 800;
     color: var(--text-primary);
     letter-spacing: 3px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.btn-compact {
+    padding: 8px 16px !important;
+    font-size: 0.9rem !important;
+    padding-bottom: 12px !important;
+}
+
+.btn-compact.secondary {
+    padding-bottom: 10px !important;
+}
+
+/* Make End Turn button more prominent - fixed position bottom right */
+#btn-end-turn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 12px 28px !important;
+    font-size: 1.1rem !important;
+    padding-bottom: 16px !important;
+    min-width: 140px;
+    z-index: 50;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .turn-indicator {
@@ -153,7 +248,8 @@ a:hover {
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    border-radius: 8px;
+    border-radius: 0px;
+    font-family: MinecraftRegular, sans-serif;
     font-weight: 600;
     font-size: clamp(0.75rem, 2vw, 0.9rem);
     transition: all var(--transition-smooth);
@@ -175,7 +271,7 @@ a:hover {
 .turn-indicator .player-dot {
     width: 10px;
     height: 10px;
-    border-radius: 50%;
+    border-radius: 0px;
     animation: pulse-dot 2s infinite;
 }
 
@@ -203,11 +299,13 @@ a:hover {
 /* === Main Game Area === */
 .game-main {
     display: flex;
-    gap: clamp(8px, 2vw, 20px);
-    align-items: flex-start;
+    gap: clamp(8px, 2vw, 16px);
+    align-items: stretch;
     width: 100%;
-    max-width: 1400px;
+    max-width: 100%;
     justify-content: center;
+    flex: 1;
+    min-height: 0;
 }
 
 /* === Player Panels === */
@@ -217,9 +315,8 @@ a:hover {
     gap: 12px;
     width: clamp(140px, 15vw, 180px);
     padding: 16px;
-    background: var(--bg-panel);
-    border: 2px solid var(--border);
-    border-radius: 12px;
+    background: var(--background-color);
+    border: 3px solid var(--secondary-color);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: all var(--transition-smooth);
 }
@@ -235,6 +332,7 @@ a:hover {
 }
 
 .player-name {
+    font-family: MinecraftRegular, sans-serif;
     font-size: clamp(0.9rem, 2vw, 1.1rem);
     font-weight: 700;
     display: flex;
@@ -242,30 +340,20 @@ a:hover {
     gap: 8px;
 }
 
-.player-name.blue {
-    color: var(--player-blue-light);
-}
-
-.player-name.red {
-    color: var(--player-red-light);
-}
+.player-name.blue { color: var(--player-blue-light); }
+.player-name.red { color: var(--player-red-light); }
 
 .player-name::before {
     content: '';
     display: block;
     width: 10px;
     height: 10px;
-    border-radius: 50%;
+    border-radius: 0px;
     box-shadow: 0 0 8px currentColor;
 }
 
-.player-name.blue::before {
-    background: var(--player-blue);
-}
-
-.player-name.red::before {
-    background: var(--player-red);
-}
+.player-name.blue::before { background: var(--player-blue); }
+.player-name.red::before { background: var(--player-red); }
 
 /* === Mana Bar === */
 .mana-section {
@@ -275,6 +363,7 @@ a:hover {
 }
 
 .mana-label {
+    font-family: MinecraftRegular, sans-serif;
     font-size: 0.7rem;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -291,7 +380,7 @@ a:hover {
 .mana-orb {
     width: 20px;
     height: 20px;
-    border-radius: 50%;
+    border-radius: 0px;
     background: var(--mana-empty);
     border: 2px solid var(--border);
     transition: all var(--transition-smooth);
@@ -316,6 +405,7 @@ a:hover {
 }
 
 .mana-text {
+    font-family: MinecraftRegular, sans-serif;
     font-size: 1rem;
     font-weight: 700;
     color: var(--mana-color);
@@ -329,7 +419,7 @@ a:hover {
     gap: 10px;
     padding: 10px;
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 8px;
+    border-radius: 0px;
     border: 1px solid var(--border);
 }
 
@@ -337,7 +427,7 @@ a:hover {
     width: 32px;
     height: 40px;
     background: linear-gradient(135deg, var(--bg-card), var(--bg-dark));
-    border-radius: 4px;
+    border-radius: 0px;
     border: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -347,12 +437,14 @@ a:hover {
 }
 
 .deck-count {
+    font-family: MinecraftRegular, sans-serif;
     font-size: 1.2rem;
     font-weight: 800;
     color: var(--text-primary);
 }
 
 .deck-label {
+    font-family: MinecraftRegular, sans-serif;
     font-size: 0.65rem;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -364,16 +456,18 @@ a:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     flex: 1;
+    max-width: 100%;
+    min-height: 0;
+    justify-content: center;
 }
 
 /* === Game Board === */
 .board-container {
     padding: clamp(6px, 1.5vw, 12px);
-    background: var(--bg-panel);
-    border: 2px solid var(--border);
-    border-radius: 12px;
+    background: var(--background-color);
+    border: 3px solid var(--secondary-color);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
@@ -382,7 +476,7 @@ a:hover {
     grid-template-columns: repeat(8, var(--tile-size));
     grid-template-rows: repeat(10, var(--tile-size));
     gap: 1px;
-    border-radius: 6px;
+    border-radius: 0px;
     overflow: hidden;
     background: var(--bg-dark);
 }
@@ -398,13 +492,8 @@ a:hover {
     transition: all var(--transition-fast);
 }
 
-.tile.light {
-    background: var(--tile-light);
-}
-
-.tile.dark {
-    background: var(--tile-dark);
-}
+.tile.light { background: var(--tile-light); }
+.tile.dark { background: var(--tile-dark); }
 
 .tile::before {
     content: '';
@@ -413,22 +502,14 @@ a:hover {
     right: 3px;
     width: 4px;
     height: 4px;
-    border-radius: 50%;
+    border-radius: 0px;
     background: rgba(255, 255, 255, 0.1);
     transition: opacity var(--transition-fast);
 }
 
-.tile.dark::before {
-    background: rgba(0, 0, 0, 0.4);
-}
-
-.tile.blue-spawn {
-    box-shadow: inset 0 0 0 999px var(--player-blue-spawn);
-}
-
-.tile.red-spawn {
-    box-shadow: inset 0 0 0 999px var(--player-red-spawn);
-}
+.tile.dark::before { background: rgba(0, 0, 0, 0.4); }
+.tile.blue-spawn { box-shadow: inset 0 0 0 999px var(--player-blue-spawn); }
+.tile.red-spawn { box-shadow: inset 0 0 0 999px var(--player-red-spawn); }
 
 .tile:hover {
     filter: brightness(1.15);
@@ -483,7 +564,7 @@ a:hover {
     position: relative;
     width: calc(var(--tile-size) - 6px);
     height: calc(var(--tile-size) - 6px);
-    border-radius: 10px;
+    border-radius: 0px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -514,7 +595,7 @@ a:hover {
     justify-content: center;
     padding: 4px;
     z-index: 1;
-    border-radius: 8px;
+    border-radius: 0px;
     overflow: hidden;
 }
 
@@ -524,13 +605,9 @@ a:hover {
     object-fit: contain;
 }
 
-.minion:hover .minion-name-tag {
-    opacity: 1;
-}
+.minion:hover .minion-name-tag { opacity: 1; }
 
-.minion.can-act {
-    animation: active-glow 2s infinite;
-}
+.minion.can-act { animation: active-glow 2s infinite; }
 
 @keyframes active-glow {
     0%, 100% { box-shadow: 0 0 8px rgba(255, 255, 255, 0.2); }
@@ -541,7 +618,7 @@ a:hover {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 6px;
+    border-radius: 0px;
 }
 
 .minion-placeholder {
@@ -550,6 +627,7 @@ a:hover {
     justify-content: center;
     color: rgba(255, 255, 255, 0.9);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    font-family: MinecraftRegular, sans-serif;
     font-weight: 700;
     font-size: 1.2rem;
 }
@@ -562,7 +640,7 @@ a:hover {
     width: 8px;
     height: 8px;
     background: #22c55e;
-    border-radius: 50%;
+    border-radius: 0px;
     box-shadow: 0 0 6px #22c55e;
     animation: pulse-ready 2s infinite;
 }
@@ -596,6 +674,7 @@ a:hover {
 }
 
 .hand-label {
+    font-family: MinecraftRegular, sans-serif;
     font-size: 0.7rem;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -613,18 +692,16 @@ a:hover {
     overflow-y: auto;
     overflow-x: hidden;
     padding: 10px;
-    background: var(--bg-panel);
-    border: 2px solid var(--border);
-    border-radius: 10px;
+    background: var(--background-color);
+    border: 3px solid var(--secondary-color);
     box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .card {
     width: var(--card-width);
     height: var(--card-height);
-    border-radius: 8px;
-    background: linear-gradient(135deg, var(--bg-card), var(--bg-panel));
-    border: 2px solid var(--border);
+    background: var(--primary-color);
+    border: 3px solid var(--secondary-color);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -644,7 +721,7 @@ a:hover {
 
 .card.selected {
     border-color: var(--highlight-selected);
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.15), var(--bg-card));
+    background: var(--primary-color);
     transform: translateY(-6px);
     box-shadow: 0 8px 20px rgba(250, 204, 21, 0.5);
 }
@@ -656,19 +733,20 @@ a:hover {
 
 .card.cannot-afford:hover {
     transform: none;
-    border-color: var(--border);
+    border-color: var(--secondary-color);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .card-image {
     width: 50px;
     height: 50px;
-    border-radius: 6px;
+    border-radius: 0px;
     background: var(--bg-dark);
     border: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-family: MinecraftRegular, sans-serif;
     font-size: 0.6rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -684,6 +762,7 @@ a:hover {
 }
 
 .card-name {
+    font-family: MinecraftRegular, sans-serif;
     font-size: 0.65rem;
     font-weight: 600;
     text-align: center;
@@ -700,19 +779,20 @@ a:hover {
     right: -8px;
     width: 24px;
     height: 24px;
-    border-radius: 50%;
+    border-radius: 0px;
     background: linear-gradient(135deg, var(--mana-color), #a78bfa);
     border: 2px solid var(--bg-dark);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-family: MinecraftRegular, sans-serif;
     font-size: 0.75rem;
     font-weight: 800;
     color: white;
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.6);
 }
 
-/* === Action Buttons === */
+/* === Action Buttons - Minecraft Style === */
 .action-bar {
     display: flex;
     gap: 8px;
@@ -721,53 +801,95 @@ a:hover {
 }
 
 .action-btn {
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    border: none;
+    font-family: MinecraftTen, sans-serif !important;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none;
+    user-select: none;
     cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: all var(--transition-smooth);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-shadow: 2.5px 2.5px 0 rgba(0,0,0,.343);
     white-space: nowrap;
+    border: none;
 }
 
 .action-btn.primary {
-    background: linear-gradient(135deg, var(--mana-color), #a78bfa);
-    color: white;
+    background: var(--btn-primary-inner-color) !important;
+    background-color: var(--btn-primary-inner-color) !important;
+    border: 3px solid var(--btn-primary-border-color) !important;
+    box-shadow: inset 0 -6px 0 0 var(--btn-primary-inner-shadow-color), 
+                inset 3px 3px 0 var(--btn-primary-inner-border-lt-color), 
+                inset -3px -9px 0 var(--btn-primary-inner-border-br-color) !important;
+    color: var(--btn-primary-text-color) !important;
+    padding-bottom: 15px !important;
+    padding-top: 5px !important;
 }
 
 .action-btn.primary:hover {
-    background: linear-gradient(135deg, #a78bfa, var(--mana-color));
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-    transform: translateY(-1px);
+    background-color: var(--btn-primary-inner-hover-color) !important;
 }
 
 .action-btn.primary:active {
-    transform: translateY(0);
+    box-shadow: inset 0 0 0 0 var(--btn-primary-inner-shadow-color), 
+                inset 3px 3px 0 var(--btn-primary-inner-border-lt-color), 
+                inset -3px -3px 0 var(--btn-primary-inner-border-br-color) !important;
+    position: relative;
+    top: 2px;
 }
 
 .action-btn.secondary {
-    background: var(--bg-card);
-    color: var(--text-primary);
-    border: 2px solid var(--border);
+    background: var(--btn-tertiary-inner-color) !important;
+    background-color: var(--btn-tertiary-inner-color) !important;
+    border: 3px solid var(--btn-tertiary-border-color) !important;
+    box-shadow: inset 0 -6px 0 0 var(--btn-tertiary-inner-shadow-color), 
+                inset 3px 3px 0 var(--btn-tertiary-inner-border-lt-color), 
+                inset -3px -9px 0 var(--btn-tertiary-inner-border-br-color) !important;
+    color: var(--btn-tertiary-text-color) !important;
+    padding-bottom: 12px !important;
+    font-family: MinecraftRegular, sans-serif !important;
+    letter-spacing: 0.5px !important;
+    text-shadow: none !important;
 }
 
 .action-btn.secondary:hover {
-    background: var(--bg-panel);
-    border-color: var(--text-muted);
+    background-color: var(--btn-tertiary-inner-hover-color) !important;
+}
+
+.action-btn.secondary:active {
+    box-shadow: inset 0 0 0 0 var(--btn-tertiary-inner-shadow-color), 
+                inset 3px 3px 0 var(--btn-tertiary-inner-border-lt-color), 
+                inset -3px -3px 0 var(--btn-tertiary-inner-border-br-color) !important;
+    position: relative;
+    top: 2px;
 }
 
 .action-btn.danger {
-    background: linear-gradient(135deg, var(--player-red), #f87171);
-    color: white;
+    background: #dc3545 !important;
+    background-color: #dc3545 !important;
+    border: 3px solid var(--btn-primary-border-color) !important;
+    box-shadow: inset 0 -6px 0 0 #a02834, 
+                inset 3px 3px 0 rgba(220, 53, 69, 0.75), 
+                inset -3px -9px 0 #8b1f2e !important;
+    color: white !important;
+    padding-bottom: 15px !important;
+    padding-top: 5px !important;
 }
 
 .action-btn.danger:hover {
-    background: linear-gradient(135deg, #f87171, var(--player-red));
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    background-color: #c82333 !important;
+}
+
+.action-btn.danger:active {
+    box-shadow: inset 0 0 0 0 #a02834, 
+                inset 3px 3px 0 rgba(220, 53, 69, 0.75), 
+                inset -3px -3px 0 #8b1f2e !important;
+    position: relative;
+    top: 2px;
 }
 
 .action-btn:disabled {
@@ -776,81 +898,122 @@ a:hover {
     transform: none !important;
 }
 
+.btn-success {
+    background: #28a745 !important;
+    background-color: #28a745 !important;
+    border: 3px solid var(--btn-primary-border-color) !important;
+    box-shadow: inset 0 -6px 0 0 #1e7e34, 
+                inset 3px 3px 0 rgba(40, 167, 69, 0.75), 
+                inset -3px -9px 0 #155724 !important;
+    color: white !important;
+    padding-bottom: 15px !important;
+    padding-top: 5px !important;
+}
+
+.btn-success:hover {
+    background-color: #218838 !important;
+}
+
+.btn-success:active {
+    box-shadow: inset 0 0 0 0 #1e7e34, 
+                inset 3px 3px 0 rgba(40, 167, 69, 0.75), 
+                inset -3px -3px 0 #155724 !important;
+    position: relative;
+    top: 2px;
+}
+
+.btn-small {
+    padding: 6px 12px !important;
+    font-size: 0.8rem !important;
+}
+
 /* === Modal Overlay === */
 .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.9);
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.85) !important;
     backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    opacity: 0;
-    visibility: hidden;
-    transition: all var(--transition-smooth);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 100 !important;
     padding: 16px;
 }
 
 .modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
-.modal {
-    background: var(--bg-card);
-    border: 2px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
+/* Only apply to game modals inside modal-overlay, not admin panel modals */
+.modal-overlay > .modal {
+    font-family: MinecraftRegular, sans-serif !important;
+    background: var(--background-color) !important;
+    border: 3px solid var(--secondary-color) !important;
+    padding: 24px !important;
     max-width: 800px;
+    width: auto !important;
     max-height: 85vh;
     overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-    animation: modal-appear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5) !important;
+    display: block !important;
 }
 
 @keyframes modal-appear {
     from {
         opacity: 0;
-        transform: scale(0.95) translateY(20px);
+        transform: scale(0.95);
     }
     to {
         opacity: 1;
-        transform: scale(1) translateY(0);
+        transform: scale(1);
     }
 }
 
-.modal-title {
+/* Only apply to game modals */
+.modal-overlay .modal-title {
+    font-family: MinecraftTen, sans-serif !important;
     font-size: clamp(1.2rem, 4vw, 1.5rem);
     font-weight: 800;
     margin-bottom: 20px;
     text-align: center;
     color: var(--text-primary);
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* === Deck Builder === */
 .deck-builder {
     display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 4px;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+}
+
+.minion-pool-section {
+    display: flex;
+    flex-direction: column;
 }
 
 .minion-pool {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-    gap: 8px;
-    max-height: 380px;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+    max-height: 500px;
     overflow-y: auto;
-    padding: 8px;
+    padding: 12px;
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 6px;
+    border-radius: 0px;
 }
 
 .deck-preview {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 6px;
-    padding: 12px;
+    border-radius: 0px;
+    padding: 16px;
+}
+
+/* Make deck builder modal larger */
+.modal-overlay .modal:has(.deck-builder) {
+    max-width: 1200px !important;
+    width: 95vw !important;
+    max-height: 90vh !important;
 }
 
 .deck-slots {
@@ -863,7 +1026,7 @@ a:hover {
 .deck-slot {
     width: 42px;
     height: 42px;
-    border-radius: 4px;
+    border-radius: 0px;
     background: var(--bg-dark);
     border: 1px dashed var(--border-color);
     display: flex;
@@ -889,20 +1052,17 @@ a:hover {
 }
 
 .game-over-title {
+    font-family: MinecraftTen, sans-serif;
     font-size: 2.5rem;
     font-weight: 800;
     margin-bottom: 16px;
 }
 
-.game-over-title.blue {
-    color: var(--player-blue);
-}
-
-.game-over-title.red {
-    color: var(--player-red);
-}
+.game-over-title.blue { color: var(--player-blue); }
+.game-over-title.red { color: var(--player-red); }
 
 .game-over-subtitle {
+    font-family: MinecraftRegular, sans-serif;
     font-size: 1rem;
     color: var(--text-secondary);
     margin-bottom: 24px;
@@ -910,10 +1070,11 @@ a:hover {
 
 /* === Tooltip === */
 .tooltip {
+    font-family: MinecraftRegular, sans-serif;
     position: absolute;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 0px;
     padding: 10px 12px;
     z-index: 200;
     pointer-events: none;
@@ -938,71 +1099,238 @@ a:hover {
 
 /* === Animations === */
 @keyframes spawn {
-    0% {
-        transform: scale(0);
-        opacity: 0;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
-.minion-spawn {
-    animation: spawn 0.2s ease-out;
-}
+.minion-spawn { animation: spawn 0.2s ease-out; }
 
 @keyframes attack {
-    0% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.15);
-    }
-
-    100% {
-        transform: scale(1);
-    }
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
 }
 
-.minion-attack {
-    animation: attack 0.15s ease-out;
-}
+.minion-attack { animation: attack 0.15s ease-out; }
 
 @keyframes death {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-
-    100% {
-        transform: scale(0);
-        opacity: 0;
-    }
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0); opacity: 0; }
 }
 
-.minion-death {
-    animation: death 0.2s ease-out forwards;
+.minion-death { animation: death 0.2s ease-out forwards; }
+
+/* === Dash Indicator === */
+.minion.dash-mode::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    background-color: #fbbf24;
+    background-image: url('../assets/lightning.png');
+    background-size: cover;
+    background-position: center;
+    border-radius: 0px;
+    border: 2px solid var(--bg-panel);
+    z-index: 20;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.minion.villager::before {
+    left: 50%;
+    transform: translateX(-50%);
+    top: -10px;
+    right: auto;
+}
+
+/* === Grid Labels === */
+.board-grid-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.board-labels-top {
+    display: grid;
+    grid-template-columns: 20px repeat(8, var(--tile-size));
+    gap: 1px;
+    padding-left: 1px;
+}
+
+.board-center-section {
+    display: flex;
+    gap: 4px;
+}
+
+.board-labels-left {
+    display: grid;
+    grid-template-rows: repeat(10, var(--tile-size));
+    gap: 1px;
+    width: 20px;
+    padding-top: 1px;
+}
+
+.label-cell {
+    font-family: MinecraftRegular, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* === Board Flipping === */
+.board-grid-wrapper.flipped { transform: rotate(180deg); }
+.board-grid-wrapper.flipped .minion { transform: rotate(180deg); }
+.board-grid-wrapper.flipped .label-cell { transform: rotate(180deg); }
+
+.board-grid-wrapper.flipped .damage-text,
+.board-grid-wrapper.flipped .heal-text {
+    transform: translate(-50%, -50%) rotate(180deg);
+}
+
+/* === Action Hint === */
+.action-hint {
+    font-family: MinecraftRegular, sans-serif;
+    color: var(--text-secondary);
+    font-size: clamp(0.75rem, 2vw, 0.9rem);
+    min-height: 24px;
+    margin-bottom: 8px;
+    text-align: center;
+    font-style: italic;
+    font-weight: 500;
+    padding: 4px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0px;
+    border: 1px solid var(--border);
+}
+
+/* === Page-specific styles === */
+.back-btn {
+    font-family: MinecraftRegular, sans-serif !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 10px 20px;
+    background: var(--btn-tertiary-inner-color) !important;
+    border: 3px solid var(--btn-tertiary-border-color) !important;
+    box-shadow: inset 0 -6px 0 0 var(--btn-tertiary-inner-shadow-color), 
+                inset 3px 3px 0 var(--btn-tertiary-inner-border-lt-color), 
+                inset -3px -9px 0 var(--btn-tertiary-inner-border-br-color) !important;
+    color: var(--btn-tertiary-text-color) !important;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.back-btn:hover {
+    background-color: var(--btn-tertiary-inner-hover-color) !important;
+}
+
+.back-btn:active {
+    box-shadow: inset 0 0 0 0 var(--btn-tertiary-inner-shadow-color), 
+                inset 3px 3px 0 var(--btn-tertiary-inner-border-lt-color), 
+                inset -3px -3px 0 var(--btn-tertiary-inner-border-br-color) !important;
+    position: relative;
+    top: 2px;
+}
+
+.search-box, input[type="text"], input[type="number"], input[type="password"], select {
+    font-family: MinecraftRegular, sans-serif !important;
+    background-color: var(--primary-color) !important;
+    border: 3px solid var(--btn-primary-border-color) !important;
+    box-shadow: inset 0 6px var(--secondary-color) !important;
+    color: var(--text-color) !important;
+    font-size: 1rem;
+    padding: 12px 20px !important;
+    transition: none !important;
+}
+
+.search-box:focus, input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus, select:focus {
+    outline: none !important;
+    border-color: var(--btn-primary-border-color) !important;
+}
+
+.search-box::placeholder, input::placeholder {
+    color: var(--text-muted) !important;
+}
+
+.stat-card {
+    background: var(--background-color);
+    border: 3px solid var(--secondary-color);
+    padding: 20px;
+    text-align: center;
+    transition: all var(--transition-smooth);
+}
+
+.stat-card:hover {
+    border-color: var(--mana-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.stat-value {
+    font-family: MinecraftTen, sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    color: var(--mana-color);
+    font-weight: 800;
+}
+
+.stat-label {
+    font-family: MinecraftRegular, sans-serif;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.loading {
+    font-family: MinecraftRegular, sans-serif;
+    text-align: center;
+    padding: 40px;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.error {
+    font-family: MinecraftRegular, sans-serif;
+    text-align: center;
+    padding: 40px;
+    color: var(--player-red);
+    font-size: 1.1rem;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #22c55e, #4ade80);
+    color: white;
+    border: none;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.8rem;
 }
 
 /* === Responsive === */
 @media (max-width: 1200px) {
-    :root {
-        --tile-size: 50px;
-    }
-    
-    .player-panel {
-        width: 140px;
-        padding: 12px;
-    }
+    :root { --tile-size: 50px; }
+    .player-panel { width: 140px; padding: 12px; }
 }
 
 @media (max-width: 900px) {
-    :root {
-        --tile-size: 44px;
-    }
+    :root { --tile-size: 44px; }
     
     .game-main {
         flex-direction: column;
@@ -1029,6 +1357,12 @@ a:hover {
         justify-content: center;
     }
     
+    .header-actions {
+        width: 100%;
+        justify-content: center;
+        order: 4;
+    }
+    
     .turn-indicator {
         order: 3;
         width: 100%;
@@ -1043,39 +1377,13 @@ a:hover {
         --card-height: 80px;
     }
     
-    .game-container {
-        padding: 4px;
-        gap: 6px;
-    }
-    
-    .game-header {
-        padding: 8px 12px;
-        border-radius: 8px;
-    }
-    
-    .game-title {
-        font-size: 1.1rem;
-        letter-spacing: 2px;
-    }
-    
-    .turn-number {
-        font-size: 0.7rem;
-    }
-    
-    .board-container {
-        padding: 4px;
-    }
-    
-    .player-panel {
-        padding: 10px;
-        gap: 8px;
-    }
-    
-    .hand {
-        gap: 4px;
-        padding: 6px;
-        min-height: 90px;
-    }
+    .game-container { padding: 4px; gap: 6px; }
+    .game-header { padding: 8px 12px; border-radius: 0px; }
+    .game-title { font-size: 1.1rem; letter-spacing: 2px; }
+    .turn-number { font-size: 0.7rem; }
+    .board-container { padding: 4px; }
+    .player-panel { padding: 10px; gap: 8px; }
+    .hand { gap: 4px; padding: 6px; min-height: 90px; }
     
     .action-bar {
         flex-wrap: wrap;
@@ -1089,7 +1397,7 @@ a:hover {
         min-width: 100px;
     }
     
-    .modal {
+    .modal-overlay .modal {
         padding: 16px;
         max-width: 95vw;
         max-height: 90vh;
@@ -1100,288 +1408,27 @@ a:hover {
         gap: 12px;
     }
     
-    .deck-preview {
-        order: -1;
-    }
-    
-    .minion-pool {
-        max-height: 300px;
-    }
+    .deck-preview { order: -1; }
+    .minion-pool { max-height: 300px; }
 }
 
 @media (max-width: 400px) {
-    :root {
-        --tile-size: 34px;
-    }
-    
-    .game-title {
-        font-size: 1rem;
-    }
-    
-    .turn-indicator {
-        padding: 6px 12px;
-        font-size: 0.7rem;
-    }
-    
-    .card {
-        width: 60px;
-        height: 75px;
-    }
-    
-    .card-image {
-        width: 38px;
-        height: 38px;
-    }
-    
-    .card-name {
-        font-size: 0.55rem;
-    }
+    :root { --tile-size: 34px; }
+    .game-title { font-size: 1rem; }
+    .turn-indicator { padding: 6px 12px; font-size: 0.7rem; }
+    .card { width: 60px; height: 75px; }
+    .card-image { width: 38px; height: 38px; }
+    .card-name { font-size: 0.55rem; }
 }
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
-    .tile:hover {
-        filter: none;
-        transform: none;
-    }
-    
-    .tile:active {
-        filter: brightness(1.2);
-        transform: scale(0.98);
-    }
-    
-    .minion:hover {
-        transform: none;
-    }
-    
-    .minion:active {
-        transform: scale(1.05);
-    }
-    
-    .action-btn:hover {
-        background: inherit;
-    }
-    
-    .action-btn:active {
-        transform: scale(0.95);
-    }
-    
-    .card:hover {
-        border-color: var(--border);
-    }
-    
-    .card:active {
-        border-color: var(--mana-color);
-        transform: scale(0.95);
-    }
-}
-
-/* Dash Indicator */
-.minion.dash-mode::before {
-    content: '';
-    /* must be set for pseudo-element to appear */
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    width: 20px;
-    height: 20px;
-    background-color: #fbbf24;
-    /* optional background */
-    background-image: url('../assets/lightning.png');
-    background-size: cover;
-    background-position: center;
-    border-radius: 50%;
-    border: 2px solid var(--bg-panel);
-    z-index: 20;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-/* Ensure villager crown and dash indicator don't overlap awkwardly */
-.minion.villager::before {
-    left: 50%;
-    transform: translateX(-50%);
-    top: -10px;
-    right: auto;
-}
-
-/* Grid Labels */
-.board-grid-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.board-labels-top {
-    display: grid;
-    grid-template-columns: 20px repeat(8, var(--tile-size));
-    /* 20px offset for row labels */
-    gap: 1px;
-    padding-left: 1px;
-    /* adjust alignment */
-}
-
-.board-center-section {
-    display: flex;
-    gap: 4px;
-}
-
-.board-labels-left {
-    display: grid;
-    grid-template-rows: repeat(10, var(--tile-size));
-    gap: 1px;
-    width: 20px;
-    padding-top: 1px;
-}
-
-.label-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-/* Board Flipping */
-.board-grid-wrapper.flipped {
-    transform: rotate(180deg);
-}
-
-.board-grid-wrapper.flipped .minion {
-    transform: rotate(180deg);
-}
-
-.board-grid-wrapper.flipped .label-cell {
-    transform: rotate(180deg);
-}
-
-/* Fix particle effects if any */
-.board-grid-wrapper.flipped .damage-text,
-.board-grid-wrapper.flipped .heal-text {
-    transform: translate(-50%, -50%) rotate(180deg);
-}
-
-/* Action Hint */
-.action-hint {
-    color: var(--text-secondary);
-    font-size: clamp(0.75rem, 2vw, 0.9rem);
-    min-height: 24px;
-    margin-bottom: 8px;
-    text-align: center;
-    font-style: italic;
-    font-weight: 500;
-    padding: 4px 12px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 6px;
-    border: 1px solid var(--border);
-}
-
-
-/* === Page-specific styles for leaderboard, profile, admin === */
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    padding: 10px 20px;
-    background: var(--bg-card);
-    border: 2px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-weight: 600;
-    transition: all var(--transition-smooth);
-    font-size: 0.9rem;
-}
-
-.back-btn:hover {
-    background: var(--bg-panel);
-    border-color: var(--text-muted);
-    color: var(--text-primary);
-    transform: translateY(-2px);
-}
-
-.search-box {
-    flex: 1;
-    min-width: 250px;
-    padding: 12px 20px;
-    background: var(--bg-card);
-    border: 2px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
-    transition: all var(--transition-smooth);
-}
-
-.search-box:focus {
-    outline: none;
-    border-color: var(--mana-color);
-    background: var(--bg-panel);
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
-}
-
-.search-box::placeholder {
-    color: var(--text-muted);
-}
-
-.stat-card {
-    background: var(--bg-card);
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    transition: all var(--transition-smooth);
-}
-
-.stat-card:hover {
-    border-color: var(--mana-color);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
-}
-
-.stat-value {
-    font-size: clamp(1.8rem, 4vw, 2.5rem);
-    color: var(--mana-color);
-    font-weight: 800;
-    text-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
-}
-
-.stat-label {
-    color: var(--text-secondary);
-    margin-top: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.loading {
-    text-align: center;
-    padding: 40px;
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-}
-
-.error {
-    text-align: center;
-    padding: 40px;
-    color: var(--player-red);
-    font-size: 1.1rem;
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #22c55e, #4ade80);
-    color: white;
-    border: none;
-}
-
-.btn-success:hover {
-    background: linear-gradient(135deg, #4ade80, #22c55e);
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
-}
-
-.btn-small {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+    .tile:hover { filter: none; transform: none; }
+    .tile:active { filter: brightness(1.2); transform: scale(0.98); }
+    .minion:hover { transform: none; }
+    .minion:active { transform: scale(1.05); }
+    .action-btn:hover { background: inherit; }
+    .action-btn:active { transform: scale(0.95); }
+    .card:hover { border-color: var(--border); }
+    .card:active { border-color: var(--mana-color); transform: scale(0.95); }
 }

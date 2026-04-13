@@ -215,6 +215,19 @@ export class Room {
             minion.hasMoved = true;
         }
 
+        // Rabbit ability: draw card when jumping over minions
+        if (minion.id === 'rabbit') {
+            const rabbitAbility = this.abilitySystem.get('drawOnJumpOver');
+            if (rabbitAbility) {
+                if (rabbitAbility.checkTrigger) {
+                    const triggered = rabbitAbility.checkTrigger(minion, oldPos, { row: payload.toRow, col: payload.toCol }, this.gameState);
+                    if (triggered) {
+                        rabbitAbility.onTrigger(minion, this.gameState);
+                    }
+                }
+            }
+        }
+
         return true;
     }
 
