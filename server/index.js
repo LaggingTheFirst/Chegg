@@ -265,6 +265,34 @@ app.get('/api/player/:username/matches', rateLimit({ max: 60, windowMs: 60000 })
     }
 });
 
+app.post('/api/player/:username/ai-win', rateLimit({ max: 5, windowMs: 60000 }), async (req, res) => {
+    try {
+        const username = req.params.username;
+        // Basic verification would normally go here
+        
+        const profileStr = await db.get(`user:${username}`);
+        const data = typeof profileStr === 'string' ? JSON.parse(profileStr) : profileStr;
+        
+        data.elo = (data.elo || 1200) + 10;
+        data.wins = (data.wins || 0) + 1;
+        
+        await db.put(`user:${username}`, data);
+
+        res.json({
+            success: true,
+            newElo: data.elo,
+            diff: 10
+        });
+    } catch (err) {
+        if (err.code === 'LEVEL_NOT_FOUND') {
+            res.status(404).json({ success: false, error: 'Player not found' });
+        } else {
+            console.error('AI win error:', err);
+            res.status(500).json({ success: false, error: 'Failed to record AI win' });
+        }
+    }
+});
+
 app.get('/api/admin/players', verifyAdminToken, async (req, res) => {
     try {
         const allPlayers = [];

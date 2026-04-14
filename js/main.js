@@ -15,8 +15,10 @@ import { NetworkClient } from './multiplayer/NetworkClient.js';
 import { AIManager } from './engine/AIManager.js';
 import { createModalOverlay } from './ui/Modal.js';
 import { RankSystem } from './ui/RankSystem.js';
+import { API_URL } from './config.js';
+
 //sorry yh ill have to touch all of this (._.) 
-//if ur confused about why theres a lot of ASCII i like em :3 
+
 class CheggGame {
     constructor() {
         this.gameState = null;
@@ -745,6 +747,19 @@ class CheggGame {
 
         if (!isOnline) {
             this.playerColor = 'blue';
+            
+            this.gameState.metadata = {};
+            const creds = this.networkClient.authManager.getCredentials();
+            this.gameState.metadata.blue = { username: creds ? creds.username : 'Local Player' };
+
+            if (this.aiEnabled) {
+                const aiNames = ['Gerald AI', 'Hydrophobis AI', 'wayback AI', 'Stockfish AI', 'Gerg_ AI'];
+                const randomName = aiNames[Math.floor(Math.random() * aiNames.length)];
+                this.gameState.metadata.red = { username: randomName, elo: '100' };
+            } else {
+                this.gameState.metadata.red = { username: 'Local P2' };
+            }
+
             // prep decks, shuffle happens inside
             DeckManager.initializePlayerDeck(this.gameState.players.blue, blueDeck);
             DeckManager.initializePlayerDeck(this.gameState.players.red, redDeck);
@@ -1435,6 +1450,29 @@ class CheggGame {
         const winner = this.gameState.winner;
         const winnerName = winner === 'blue' ? 'Blue Player' : 'Red Player';
 
+        // Add 10 ELO for an AI Win!
+        if (this.aiEnabled && winner === this.playerColor && this.networkClient.authManager.isAuthenticated()) {
+            const creds = this.networkClient.authManager.getCredentials();
+            fetch(`${API_URL}/player/${creds.username}/ai-win`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: creds.token })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    this.networkClient.authManager.setCredentials(creds.username, creds.token, data.newElo);
+                    setTimeout(() => {
+                        this.showRatingChange({
+                            blue: { username: creds.username, newElo: data.newElo, diff: data.diff },
+                            red: { username: 'AI', newElo: 0, diff: 0 }
+                        });
+                    }, 500); // Pops up slightly after the win screen
+                }
+            })
+            .catch(err => console.error("Could not claim AI win ELO:", err));
+        }
+
         const overlay = createModalOverlay({ id: 'game-over-screen' });
 
         overlay.innerHTML = `
@@ -1520,11 +1558,34 @@ class CheggGame {
                 </div>
             `;
             this.networkClient.findMatch(deck);
+            
+            // A 20 sec timer incase a real match isnt found 
+            this.matchmakingTimeout = setTimeout(() => {
+                const titleEl = document.querySelector('.start-screen-title');
+                if (titleEl && titleEl.innerText === 'Finding Match...') {
+                    console.log('Matchmaking timeout reached. Falling back to AI game.');
+                    
+                    // Force disconnect from matchmaking to avoid phantom connections
+                    if (this.networkClient.socket) {
+                        this.networkClient.socket.onclose = null; // Prevent the error popup
+                        this.networkClient.socket.close();
+                    }
+                    
+                    // Fallback to AI Match
+                    this.startAiGame('balanced'); 
+                }
+            }, 20000);
         });
     }
 
 
     onServerStateUpdate(newStateData) {
+        // Clear AI fallback timeout if we found a match
+        if (this.matchmakingTimeout) {
+            clearTimeout(this.matchmakingTimeout);
+            this.matchmakingTimeout = null;
+        }
+
         // No need to remove anything since we're using the game-container now
 
         if (!this.gameState) {
