@@ -265,6 +265,47 @@ export class GameState {
             winner: this.winner
         });
     }
+
+    clone(minionLoader) {
+        const rawData = JSON.parse(this.serialize());
+        const clonedState = new GameState();
+        
+        clonedState.currentPlayer = rawData.currentPlayer;
+        clonedState.turnNumber = rawData.turnNumber;
+        clonedState.phase = rawData.phase;
+        clonedState.winner = rawData.winner;
+        clonedState.nextMinionId = this.nextMinionId;
+
+        for (const color of ['red', 'blue']) {
+            const p = rawData.players[color];
+            clonedState.players[color] = {
+                color: p.color,
+                mana: p.mana,
+                maxMana: p.maxMana,
+                hand: p.hand.map(c => ({...c})),
+                deck: p.deck.map(c => ({...c})),
+                villager: null,
+                catBonusMana: p.catBonusMana
+            };
+        }
+
+        for (let r = 0; r < Board.ROWS; r++) {
+            for (let c = 0; c < Board.COLS; c++) {
+                const minionData = rawData.board[r][c].minion;
+                if (minionData) {
+                    const instance = clonedState.rehydrateMinion(minionData, minionLoader);
+                    clonedState.board[r][c].minion = instance;
+                    clonedState.minionRegistry.set(instance.instanceId, instance);
+
+                    if (instance.id === 'villager') {
+                        clonedState.players[instance.owner].villager = instance;
+                    }
+                }
+            }
+        }
+        
+        return clonedState;
+    }
 }
 
 export default GameState;
