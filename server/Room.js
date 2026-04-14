@@ -362,9 +362,16 @@ export class Room {
             const ratingB = redProfile.elo || 400;
             const scoreA = winnerColor === 'blue' ? 1 : 0;
 
-            const K = 32;
+            // dif
+            const ratingDiff = Math.abs(ratingA - ratingB);
+            
+            // Base K scales
+            const baseK = 32;
+            const smoothingFactor = 0.5 + (Math.min(ratingDiff, 1000) / 600); // 0.5 to 1.5
+            const K = baseK * smoothingFactor;
+
             const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
-            const diff = Math.round(K * (scoreA - expectedA));
+            const diff = Math.floor(K * (scoreA - expectedA));
 
             blueProfile.elo = ratingA + diff;
             redProfile.elo = ratingB - diff;
@@ -382,7 +389,7 @@ export class Room {
                 red: { username: redName, oldElo: ratingB, newElo: redProfile.elo, diff: -diff }
             });
 
-            console.log(`[ELO] ${blueName} (${ratingA} -> ${blueProfile.elo}) | ${redName} (${ratingB} -> ${redProfile.elo})`);
+            console.log(`[ELO] ${blueName} (${ratingA} -> ${blueProfile.elo}) | ${redName} (${ratingB} -> ${redProfile.elo}) [K=${K.toFixed(1)}]`);
 
         } catch (err) {
             console.error('Elo update error:', err);
