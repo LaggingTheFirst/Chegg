@@ -205,6 +205,8 @@ export class AIManager {
 
         const myVillager = state.players[color].villager;
         const opVillager = state.players[opponentColor].villager;
+        
+        const style = this.settings.playstyleBonus;
 
         // Base Evaluation: Material Advantage & Central Control
         for (const [id, minion] of state.minionRegistry) {
@@ -223,34 +225,39 @@ export class AIManager {
                 const centerBias = Math.abs(minion.position.col - Math.floor(Board.COLS / 2));
                 score -= (centerBias * 0.5) * multiplier;
 
-                // Villager specific evaluation
-                if (isMine) {
-                    // Try to advance towards enemy villager with offensive pieces
-                    if (opVillager && opVillager.position && minion.id !== 'villager') {
+                if (isMine && minion.id !== 'villager') {
+                    if (opVillager && opVillager.position) {
                         const distToOp = Board.getDistance(minion.position.row, minion.position.col, opVillager.position.row, opVillager.position.col);
-                        score -= (distToOp * 1.5);
+                        // Aggressive: HUGE push to swarm enemy king
+                        // Cautious: Light push
+                        // Balanced: Medium push
+                        const opDistMult = style === 'aggressive' ? 3.0 : (style === 'defensive' ? 0.5 : 1.5);
+                        score -= (distToOp * opDistMult);
                     }
-                    // Keep defensive pieces near our villager
-                    if (myVillager && myVillager.position && minion.id !== 'villager') {
-                        const distToMine = Board.getDistance(minion.position.row, minion.position.col, myVillager.position.row, myVillager.position.col);
-                        if (distToMine <= 2) score += 3;
-                    }
-                } else {
-                    // Punish opponent units getting close to our villager
+                    
                     if (myVillager && myVillager.position) {
                         const distToMine = Board.getDistance(minion.position.row, minion.position.col, myVillager.position.row, myVillager.position.col);
-                        score += (distToMine * 2); // Opponent further = better score
+                        // Aggressive: Ignores defending own king
+                        // Cautious: Hugely prizes staying near own king
+                        if (style === 'defensive' && distToMine <= 3) score += 6;
+                        else if (style === 'balanced' && distToMine <= 2) score += 3;
                     }
+                } else if (!isMine && myVillager && myVillager.position) {
+                    // Enemy pieces getting close to our king
+                    const distToMine = Board.getDistance(minion.position.row, minion.position.col, myVillager.position.row, myVillager.position.col);
+                    const defendMult = style === 'defensive' ? 4.0 : (style === 'aggressive' ? 1.0 : 2.0);
+                    score += (distToMine * defendMult); // Opponent further is better
                 }
             }
         }
 
-        // Playstyle modifiers (aggressive players value hurting king proximity more, etc.)
-        if (this.settings.playstyleBonus === 'aggressive') {
-            if (opVillager && opVillager.position) {
-                // Slightly penalize high mana floats to encourage spending
-                score -= state.players[color].mana * 2;
-            }
+        // Global Playstyle modifiers
+        if (style === 'aggressive') {
+            // Highly penalize unspent mana to force spawning and overwhelming combat
+            score -= state.players[color].mana * 3;
+        } else if (style === 'defensive') {
+            // Cautious slightly rewards hoarding some mana in reserve instead of blindly throwing units
+            score += Math.min(state.players[color].mana, 3) * 1; 
         }
 
         return score;
