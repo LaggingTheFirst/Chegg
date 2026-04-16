@@ -20,14 +20,6 @@ To change the server URL (for multiplayer, leaderboards, tournaments):
 
 See [SERVER_CONFIG.md](SERVER_CONFIG.md) for detailed setup instructions.
 
-## Tournament System
-
-The game now includes Swiss-style tournaments! See [TOURNAMENT_GUIDE.md](TOURNAMENT_GUIDE.md) for:
-- How to create and run tournaments
-- Swiss pairing system explanation
-- API documentation
-- Tips for tournament organizers
-
 ## Issues
 
 Create an issue on this repo with the correct tag thanks.
