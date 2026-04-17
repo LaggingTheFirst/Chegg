@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { Level } from 'level';
 import { RoomManager } from './RoomManager.js';
 import { TournamentManager } from './TournamentManager.js';
+import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

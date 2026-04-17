@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits, SlashCommandBuilder, REST, Routes } from 'discord.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import 'dotenv/config';
 
 const execAsync = promisify(exec);
 
@@ -66,28 +67,25 @@ client.on('interactionCreate', async (interaction) => {
     if (commandName === 'restart') {
         await interaction.reply('Restarting server...');
         try {
-            // Give Discord time to send the reply before the process exits
-            setTimeout(() => {
-                console.log('[BOT] Restart triggered via Discord');
-                process.exit(0); // PM2 / process manager will restart it
-            }, 1000);
+            const { stdout } = await execAsync('npx pm2 restart chegg-server');
+            await interaction.followUp(`Done. \`\`\`\n${stdout.slice(0, 1900)}\n\`\`\``);
         } catch (err) {
-            await interaction.followUp(`Restart failed: ${err.message}`);
+            await interaction.followUp(`Restart failed: \`\`\`\n${err.message.slice(0, 1900)}\n\`\`\``);
         }
     }
 
     if (commandName === 'update') {
         await interaction.reply('Pulling latest changes from GitHub...');
         try {
-            const { stdout, stderr } = await execAsync('git pull');
-            const output = stdout || stderr || 'No output';
-            await interaction.followUp(`\`\`\`\n${output.slice(0, 1900)}\n\`\`\`\nRestarting...`);
-            setTimeout(() => {
-                console.log('[BOT] Update + restart triggered via Discord');
-                process.exit(0);
-            }, 1500);
+            const { stdout: pullOut, stderr: pullErr } = await execAsync('git pull');
+            const pullOutput = pullOut || pullErr || 'No output';
+            await interaction.followUp(`\`\`\`\n${pullOutput.slice(0, 1900)}\n\`\`\``);
+
+            await interaction.followUp('Restarting server...');
+            const { stdout: restartOut } = await execAsync('npx pm2 restart chegg-server');
+            await interaction.followUp(`Done. \`\`\`\n${restartOut.slice(0, 1900)}\n\`\`\``);
         } catch (err) {
-            await interaction.followUp(`Update failed:\n\`\`\`\n${err.message.slice(0, 1900)}\n\`\`\``);
+            await interaction.followUp(`Failed: \`\`\`\n${err.message.slice(0, 1900)}\n\`\`\``);
         }
     }
 
