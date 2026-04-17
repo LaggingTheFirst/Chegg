@@ -67,12 +67,24 @@ class CheggGame {
         // expose export function
         window.exportBoard = () => this.gameState.exportBoardState();
 
-        // Check if joining tournament match
+        // Check URL routing
+        const urlParams = new URLSearchParams(window.location.search);
+        const joinRoomId = urlParams.get('join');
+        const spectateRoomId = urlParams.get('spectate');
         const tournamentJoin = localStorage.getItem('tournament_join');
+
         if (tournamentJoin) {
             localStorage.removeItem('tournament_join');
             const { tournamentId, username } = JSON.parse(tournamentJoin);
             this.joinTournamentMatch(tournamentId, username);
+        } else if (joinRoomId) {
+            this.isOnline = true;
+            window.history.replaceState({}, document.title, window.location.pathname);
+            this.joinRoomFromUrl(joinRoomId);
+        } else if (spectateRoomId) {
+            this.isOnline = true;
+            window.history.replaceState({}, document.title, window.location.pathname);
+            this.spectateRoomFromUrl(spectateRoomId);
         } else {
             this.showStartScreen();
         }
@@ -99,6 +111,62 @@ class CheggGame {
                 }
             }, 100);
         });
+    }
+
+    joinRoomFromUrl(roomId) {
+        if (!this.networkClient.authManager.isAuthenticated()) {
+            this.showProfileModal(() => this.joinRoomFromUrl(roomId));
+            return;
+        }
+
+        const overlay = createModalOverlay({ id: 'url-join' });
+        overlay.innerHTML = `
+            <div class="modal" style="text-align: center;">
+                <div class="modal-title">Joining Room...</div>
+                <div class="preloader-spinner" style="margin: 20px auto;"></div>
+                <button class="action-btn secondary" onclick="window.location.href='/'">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        this.selectDeck((deck) => {
+            this.networkClient.connect();
+            const checkConnection = setInterval(() => {
+                if (this.networkClient.socket && this.networkClient.socket.readyState === 1) {
+                    clearInterval(checkConnection);
+                    this.networkClient.joinCustomRoom(roomId, deck);
+                    const modal = document.getElementById('url-join');
+                    if (modal) modal.remove();
+                }
+            }, 100);
+        });
+    }
+
+    spectateRoomFromUrl(roomId) {
+        if (!this.networkClient.authManager.isAuthenticated()) {
+            this.showProfileModal(() => this.spectateRoomFromUrl(roomId));
+            return;
+        }
+
+        const overlay = createModalOverlay({ id: 'url-spectate' });
+        overlay.innerHTML = `
+            <div class="modal" style="text-align: center;">
+                <div class="modal-title">Connecting to Spectate...</div>
+                <div class="preloader-spinner" style="margin: 20px auto;"></div>
+                <button class="action-btn secondary" onclick="window.location.href='/'">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        this.networkClient.connect();
+        const checkConnection = setInterval(() => {
+            if (this.networkClient.socket && this.networkClient.socket.readyState === 1) {
+                clearInterval(checkConnection);
+                this.networkClient.spectateRoom(roomId);
+                const modal = document.getElementById('url-spectate');
+                if (modal) modal.remove();
+            }
+        }, 100);
     }
 
     showStartScreen() {
@@ -627,6 +695,10 @@ class CheggGame {
                                 <input type="checkbox" id="save-game" checked>
                                 <label for="save-game" style="font-size: 0.8rem;">Save Game (LevelDB)</label>
                             </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="private-room">
+                                <label for="private-room" style="font-size: 0.8rem;">Private (Hide from list)</label>
+                            </div>
                             <button class="action-btn primary" id="btn-do-create">Create & Join</button>
                         </div>
                     </div>
@@ -678,12 +750,90 @@ class CheggGame {
             const name = overlay.querySelector('#room-name').value || 'Chegg Room';
             const timer = parseInt(overlay.querySelector('#room-timer').value) || 60;
             const saveGame = overlay.querySelector('#save-game').checked;
+            const isPrivate = overlay.querySelector('#private-room').checked;
 
             this.selectDeck((deck) => {
-                this.networkClient.createCustomRoom(name, timer, deck, saveGame);
+                // Attach the listener BEFORE sending the request to avoid race condition
+                this.showRoomWaitingMenu();
+                this.networkClient.createCustomRoom(name, timer, deck, saveGame, isPrivate);
                 overlay.remove();
             });
         });
+    }
+
+    showRoomWaitingMenu() {
+        const overlay = createModalOverlay({ id: 'room-waiting' });
+        overlay.innerHTML = `
+            <div class="modal" style="text-align: center; width: 400px;">
+                <div class="modal-title">Creating Room...</div>
+                <div class="preloader-spinner" style="margin: 20px auto;"></div>
+                <button class="action-btn danger cancel-btn" onclick="window.location.href='/'">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const onRoomCreated = (e) => {
+            const roomId = e.detail.roomId;
+            const joinUrl = window.location.origin + window.location.pathname + '?join=' + roomId;
+            const spectateUrl = window.location.origin + window.location.pathname + '?spectate=' + roomId;
+
+            overlay.innerHTML = `
+                <div class="modal" style="width: 450px;">
+                    <div class="modal-title" style="text-align: center;">Waiting for Opponent</div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 20px;">
+                        Room created! Share these links with others.
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 0.8rem; font-weight: bold;">Invite Link (Play):</label>
+                        <div style="display: flex; gap: 8px; margin-top: 5px;">
+                            <input type="text" value="${joinUrl}" readonly class="action-btn secondary" style="flex: 1; text-align: left; cursor: text;">
+                            <button class="action-btn primary" onclick="navigator.clipboard.writeText('${joinUrl}'); alert('Invite link copied!');">Copy</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 0.8rem; font-weight: bold;">Spectator Link:</label>
+                        <div style="display: flex; gap: 8px; margin-top: 5px;">
+                            <input type="text" value="${spectateUrl}" readonly class="action-btn secondary" style="flex: 1; text-align: left; cursor: text;">
+                            <button class="action-btn primary" onclick="navigator.clipboard.writeText('${spectateUrl}'); alert('Spectator link copied!');">Copy</button>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div class="preloader-spinner" style="margin: 0 auto; width: 32px; height: 32px; border-width: 3px;"></div>
+                    </div>
+
+                    <button class="action-btn danger" style="width: 100%;" onclick="window.location.href='/'">Cancel / Exit</button>
+                </div>
+            `;
+            document.removeEventListener('chegg:room_created', onRoomCreated);
+        };
+        
+        document.addEventListener('chegg:room_created', onRoomCreated);
+        
+        // Listen for game start to close the waiting menu
+        const onGameStart = (e) => {
+            const modal = document.getElementById('room-waiting');
+            if (modal) {
+                modal.remove();
+            }
+            document.removeEventListener('chegg:turnStart', onGameStart);
+        };
+        document.addEventListener('chegg:turnStart', onGameStart);
+    }
+
+    joinRoomFromUrl(roomId) {
+        this.isOnline = true;
+        this.selectDeck((deck) => {
+            this.networkClient.joinCustomRoom(roomId, deck);
+        });
+    }
+
+    spectateRoomFromUrl(roomId) {
+        this.isOnline = true;
+        this.playerColor = 'spectator';
+        this.networkClient.spectateRoom(roomId);
     }
 
     joinRoom(roomId) {
@@ -826,7 +976,13 @@ class CheggGame {
         this.currentHand.onCardClick = (card, index) => this.handleCardClick(card, index);
 
         document.getElementById('btn-cancel').addEventListener('click', () => this.cancelAction());
-        document.getElementById('btn-end-turn').addEventListener('click', () => this.endTurn());
+        
+        const endTurnBtn = document.getElementById('btn-end-turn');
+        if (endTurnBtn && !endTurnBtn.dataset.listenerAttached) {
+            endTurnBtn.dataset.listenerAttached = 'true';
+            endTurnBtn.addEventListener('click', () => this.endTurn());
+        }
+        
         document.getElementById('btn-forfeit').addEventListener('click', () => {
             if (confirm('Are you sure you want to forfeit?')) {
                 if (this.isOnline) this.networkClient.forfeit();
@@ -856,7 +1012,12 @@ class CheggGame {
         this.boardUI.render();
         this.bluePanel.render();
         this.redPanel.render();
-        this.currentHand.setPlayer(this.gameState.currentPlayer);
+        
+        if (this.isOnline || this.aiEnabled) {
+            this.currentHand.setPlayer(this.playerColor);
+        } else {
+            this.currentHand.setPlayer(this.gameState.currentPlayer);
+        }
 
         const indicator = document.getElementById('turn-indicator');
         const turnText = document.getElementById('turn-text');
@@ -1414,7 +1575,15 @@ class CheggGame {
     }
 
     endTurn() {
+        console.log('[CLIENT] endTurn() called - isOnline:', this.isOnline, 'currentPlayer:', this.gameState?.currentPlayer, 'myColor:', this.playerColor);
+        console.trace('[CLIENT] endTurn stack trace');
+        
         if (this.isOnline) {
+            // Disable button immediately to prevent double-clicks
+            const endTurnBtn = document.getElementById('btn-end-turn');
+            if (endTurnBtn) {
+                endTurnBtn.disabled = true;
+            }
             this.networkClient.sendAction('END_TURN', {});
             this.cancelAction();
             return;
@@ -1450,13 +1619,18 @@ class CheggGame {
         const winner = this.gameState.winner;
         const winnerName = winner === 'blue' ? 'Blue Player' : 'Red Player';
 
-        // Add 10 ELO for an AI Win!
-        if (this.aiEnabled && winner === this.playerColor && this.networkClient.authManager.isAuthenticated()) {
+        // Report results for Elo tracking
+        if (this.aiEnabled && this.networkClient.authManager.isAuthenticated()) {
             const creds = this.networkClient.authManager.getCredentials();
+            const resultWinner = (winner === this.playerColor) ? 'player' : 'ai';
+            
             fetch(`${API_URL}/player/${creds.username}/ai-win`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: creds.token })
+                body: JSON.stringify({ 
+                    token: creds.token,
+                    winner: resultWinner
+                })
             })
             .then(res => res.json())
             .then(data => {
@@ -1465,12 +1639,12 @@ class CheggGame {
                     setTimeout(() => {
                         this.showRatingChange({
                             blue: { username: creds.username, newElo: data.newElo, diff: data.diff },
-                            red: { username: 'AI', newElo: 0, diff: 0 }
+                            red: { username: 'AI', newElo: data.botElo, diff: (resultWinner === 'ai' ? Math.abs(data.diff) : -Math.abs(data.diff)) }
                         });
-                    }, 500); // Pops up slightly after the win screen
+                    }, 500);
                 }
             })
-            .catch(err => console.error("Could not claim AI win ELO:", err));
+            .catch(err => console.error("Could not update AI game Elo:", err));
         }
 
         const overlay = createModalOverlay({ id: 'game-over-screen' });
@@ -1595,6 +1769,8 @@ class CheggGame {
                 this.boardUI.setFlip(true);
             }
         }
+
+        console.log('[STATE UPDATE] Current player:', newStateData.currentPlayer, '| My color:', this.playerColor, '| Turn:', newStateData.turnNumber);
 
         // map raw data back to engine state
         this.gameState.metadata = newStateData.metadata;

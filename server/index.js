@@ -70,6 +70,13 @@ function generateToken() {
     return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
+function calculateEloMatchup(ratingA, ratingB, scoreA, kFactor = 32) {
+    const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+    const newRatingA = Math.round(ratingA + kFactor * (scoreA - expectedA));
+    const diff = newRatingA - ratingA;
+    return { newRating: newRatingA, diff };
+}
+
 function verifyAdminToken(req, res, next) {
     const authHeader = req.headers.authorization;
     
@@ -146,7 +153,8 @@ app.get('/api/leaderboard', rateLimit({ max: 30, windowMs: 60000 }), async (req,
                     elo: profile.elo || 1200,
                     wins: profile.wins || 0,
                     losses: profile.losses || 0,
-                    games: (profile.wins || 0) + (profile.losses || 0)
+                    games: (profile.wins || 0) + (profile.losses || 0),
+                    isBot: !!profile.isBot
                 });
             }
         }
@@ -265,30 +273,58 @@ app.get('/api/player/:username/matches', rateLimit({ max: 60, windowMs: 60000 })
     }
 });
 
-app.post('/api/player/:username/ai-win', rateLimit({ max: 5, windowMs: 60000 }), async (req, res) => {
+app.post('/api/player/:username/ai-win', rateLimit({ max: 10, windowMs: 60000 }), async (req, res) => {
     try {
         const username = req.params.username;
-        // Basic verification would normally go here
+        const { winner, token } = req.body; // winner can be 'player' or 'ai'
+        const botName = '[Bot] Chegg AI';
         
+        // Load player
         const profileStr = await db.get(`user:${username}`);
-        const data = typeof profileStr === 'string' ? JSON.parse(profileStr) : profileStr;
+        const playerData = typeof profileStr === 'string' ? JSON.parse(profileStr) : profileStr;
         
-        data.elo = (data.elo || 1200) + 10;
-        data.wins = (data.wins || 0) + 1;
-        
-        await db.put(`user:${username}`, data);
+        if (token && playerData.token !== token) {
+             return res.status(401).json({ success: false, error: 'Invalid token' });
+        }
+
+        // Load bot
+        let botData;
+        try {
+            const botStr = await db.get(`user:${botName}`);
+            botData = typeof botStr === 'string' ? JSON.parse(botStr) : botStr;
+        } catch (e) {
+            botData = { username: botName, elo: 800, wins: 0, losses: 0, isBot: true };
+        }
+
+        const score = (winner === 'player') ? 1 : 0;
+        const playerEloChange = calculateEloMatchup(playerData.elo || 1200, botData.elo || 800, score);
+        const botEloChange = calculateEloMatchup(botData.elo || 800, botData.elo || 1200, 1 - score);
+
+        playerData.elo = playerEloChange.newRating;
+        if (score === 1) playerData.wins = (playerData.wins || 0) + 1;
+        else playerData.losses = (playerData.losses || 0) + 1;
+
+        botData.elo = botEloChange.newRating;
+        if (score === 0) botData.wins = (botData.wins || 0) + 1;
+        else botData.losses = (botData.losses || 0) + 1;
+
+        await db.put(`user:${username}`, playerData);
+        await db.put(`user:${botName}`, botData);
+
+        console.log(`[ELO] ${username} vs ${botName}. Winner: ${winner}. New Elos: ${playerData.elo} / ${botData.elo}`);
 
         res.json({
             success: true,
-            newElo: data.elo,
-            diff: 10
+            newElo: playerData.elo,
+            diff: playerEloChange.diff,
+            botElo: botData.elo
         });
     } catch (err) {
         if (err.code === 'LEVEL_NOT_FOUND') {
             res.status(404).json({ success: false, error: 'Player not found' });
         } else {
-            console.error('AI win error:', err);
-            res.status(500).json({ success: false, error: 'Failed to record AI win' });
+            console.error('AI win/loss error:', err);
+            res.status(500).json({ success: false, error: 'Failed to record game result' });
         }
     }
 });
@@ -702,8 +738,36 @@ wss.on('connection', (ws) => {
     });
 });
 
-httpServer.listen(PORT, () => {
+async function initBotUser() {
+    const botName = '[Bot] Chegg AI';
+    try {
+        const userData = await db.get(`user:${botName}`);
+        // If user exists but has no token or wrong token, fix it
+        if (!userData.token || (userData.isBot && userData.token !== 'bot-internal')) {
+            userData.token = 'bot-internal';
+            userData.isBot = true;
+            await db.put(`user:${botName}`, userData);
+            console.log(`[BOT] Updated bot user token on startup: ${botName}`);
+        }
+    } catch (err) {
+        if (err.code === 'LEVEL_NOT_FOUND') {
+            await db.put(`user:${botName}`, {
+                username: botName,
+                token: 'bot-internal',
+                elo: 800,
+                wins: 0,
+                losses: 0,
+                isBot: true,
+                created: Date.now()
+            });
+            console.log(`[BOT] Created bot user: ${botName}`);
+        }
+    }
+}
+
+httpServer.listen(PORT, async () => {
     console.log(`[CHEGG SERVER] running at http://localhost:${PORT}`);
     console.log(`[ADMIN] Password: ${ADMIN_PASSWORD}`);
     console.log(`[ADMIN] Access panel at http://localhost:${PORT}/admin.html`);
+    await initBotUser();
 });

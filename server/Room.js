@@ -30,6 +30,7 @@ export class Room {
         };
         this.timer = null;
         this.gameLog = []; // list of notation strings
+        this.lastEndTurnTime = new Map(); // Track last END_TURN per socket
 
         // hook up authoritative event stuff
         this.turnManager.onEvent = (eventName, data) => {
@@ -40,6 +41,14 @@ export class Room {
     addPlayer(socket, color, deck) {
         this.players.push({ socket, color, deck });
         this.send(socket, 'player_assigned', { color });
+        
+        // Populate metadata for client-side display
+        if (this.gameState.metadata) {
+            this.gameState.metadata[color] = {
+                username: socket.username || (color === 'blue' ? 'Blue' : 'Red'),
+                elo: socket.elo || 400
+            };
+        }
     }
 
     addSpectator(socket) {
@@ -85,8 +94,26 @@ export class Room {
 
     processAction(socket, data) {
         const player = this.players.find(p => p.socket.id === socket.id);
-        if (!player || player.color !== this.gameState.currentPlayer) {
+        if (!player) {
+            console.log(`[${this.id}] processAction: Player not found for socket ${socket.id}`);
+            return;
+        }
+        if (player.color !== this.gameState.currentPlayer) {
+            console.log(`[${this.id}] processAction: Not ${player.color}'s turn (current: ${this.gameState.currentPlayer})`);
             return; // not your turn
+        }
+
+        // Prevent duplicate END_TURN actions per socket
+        if (data.type === 'END_TURN') {
+            const lastTime = this.lastEndTurnTime.get(socket.id) || 0;
+            const now = Date.now();
+            const timeSince = now - lastTime;
+            console.log(`[${this.id}] END_TURN from socket ${socket.id.substring(0, 8)}... - ${timeSince}ms since last, player: ${player.color}, current: ${this.gameState.currentPlayer}`);
+            if (timeSince < 500 && lastTime > 0) {
+                console.log(`[${this.id}] ⚠️ BLOCKED duplicate END_TURN from socket ${socket.id.substring(0, 8)}... (${timeSince}ms since last)`);
+                return;
+            }
+            this.lastEndTurnTime.set(socket.id, now);
         }
 
         // authoritative type shi
@@ -352,11 +379,39 @@ export class Room {
         if (!blueName || !redName) return;
 
         try {
-            let blueProfile = await this.db.get(`user:${blueName}`);
-            let redProfile = await this.db.get(`user:${redName}`);
+            let blueProfile, redProfile;
+            
+            try {
+                blueProfile = await this.db.get(`user:${blueName}`);
+                if (typeof blueProfile === 'string') blueProfile = JSON.parse(blueProfile);
+                if (!blueProfile) throw new Error('Empty profile');
+            } catch (err) {
+                console.warn(`[ELO] profile not found for ${blueName}, creating default`);
+                blueProfile = { 
+                    username: blueName, 
+                    elo: 400, 
+                    wins: 0, 
+                    losses: 0,
+                    isBot: blueName.startsWith('[Bot]')
+                };
+                await this.db.put(`user:${blueName}`, blueProfile);
+            }
 
-            if (typeof blueProfile === 'string') blueProfile = JSON.parse(blueProfile);
-            if (typeof redProfile === 'string') redProfile = JSON.parse(redProfile);
+            try {
+                redProfile = await this.db.get(`user:${redName}`);
+                if (typeof redProfile === 'string') redProfile = JSON.parse(redProfile);
+                if (!redProfile) throw new Error('Empty profile');
+            } catch (err) {
+                console.warn(`[ELO] profile not found for ${redName}, creating default`);
+                redProfile = { 
+                    username: redName, 
+                    elo: 400, 
+                    wins: 0, 
+                    losses: 0,
+                    isBot: redName.startsWith('[Bot]')
+                };
+                await this.db.put(`user:${redName}`, redProfile);
+            }
 
             const ratingA = blueProfile.elo || 400;
             const ratingB = redProfile.elo || 400;
@@ -397,8 +452,10 @@ export class Room {
     }
 
     handleEndTurn() {
+        const caller = new Error().stack.split('\n')[2].trim();
+        console.log(`[${this.id}] ⚡ handleEndTurn EXECUTING - Current player: ${this.gameState.currentPlayer}, Called from: ${caller}`);
         this.turnManager.endTurn();
-        this.broadcastState();
+        // Don't broadcast here - let processAction handle it
         this.resetTimer();
         return true;
     }

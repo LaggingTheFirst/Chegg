@@ -1,0 +1,149 @@
+{
+  "blue": {
+    "turn_6": {
+      "moves": [
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 0,
+            "row": 0,
+            "col": 4
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 2,
+            "row": 1,
+            "col": 4
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 0,
+            "row": 1,
+            "col": 3
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 0,
+            "row": 1,
+            "col": 5
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 3,
+            "row": 0,
+            "col": 3
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 4,
+            "row": 0,
+            "col": 2
+          }
+        }
+      ],
+      "count": 997
+    }
+  },
+  "red": {
+    "turn_4": {
+      "moves": [
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 0,
+            "row": 9,
+            "col": 4
+          }
+        },
+        {
+          "type": "MOVE_MINION",
+          "payload": {
+            "minionId": 2,
+            "toRow": 9,
+            "toCol": 3
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 1,
+            "row": 8,
+            "col": 4
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 1,
+            "row": 8,
+            "col": 3
+          }
+        }
+      ],
+      "count": 1
+    },
+    "turn_6": {
+      "moves": [
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 0,
+            "row": 9,
+            "col": 4
+          }
+        },
+        {
+          "type": "MOVE_MINION",
+          "payload": {
+            "minionId": 1,
+            "toRow": 9,
+            "toCol": 3
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 0,
+            "row": 9,
+            "col": 4
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 2,
+            "row": 8,
+            "col": 4
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 0,
+            "row": 9,
+            "col": 5
+          }
+        },
+        {
+          "type": "SPAWN_MINION",
+          "payload": {
+            "cardIndex": 3,
+            "row": 9,
+            "col": 2
+          }
+        }
+      ],
+      "count": 985
+    }
+  }
+}

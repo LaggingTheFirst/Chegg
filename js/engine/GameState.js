@@ -17,6 +17,9 @@ export class GameState {
         this.actionMode = null; // null, 'move', 'attack', 'ability', 'spawn'
         this.minionRegistry = new Map(); // tracks all active instances
         this.nextMinionId = 1;
+        this.history = [];
+        this.evaluationScore = 0;
+        this.metadata = { blue: {}, red: {} };
     }
 
     createEmptyBoard() {
@@ -53,6 +56,117 @@ export class GameState {
         return this.currentPlayer === 'red' ? 'blue' : 'red';
     }
 
+    applySearchAction(action, minionLoader) {
+        const color = this.currentPlayer;
+        const player = this.players[color];
+        const undoInfo = {
+            type: action.type,
+            currentPlayer: color,
+            mana: player.mana,
+            phase: this.phase,
+            winner: this.winner
+        };
+
+        if (action.type === 'spawn') {
+            const card = player.hand[action.index];
+            if (!card) return null; // Safety check for invalid heuristic moves
+            undoInfo.card = { ...card };
+            undoInfo.index = action.index;
+            undoInfo.row = action.row;
+            undoInfo.col = action.col;
+            
+            const minion = minionLoader.createSpecializedMinion(card.id, color);
+            if (!minion) return null;
+            this.placeMinion(minion, action.row, action.col);
+            player.mana -= (card.cost || 0);
+            player.hand.splice(action.index, 1);
+            undoInfo.instanceId = minion.instanceId;
+        } else if (action.type === 'move') {
+            const minion = this.minionRegistry.get(action.minionId);
+            if (!minion) return null;
+            undoInfo.minionId = action.minionId;
+            undoInfo.fromRow = minion.position.row;
+            undoInfo.fromCol = minion.position.col;
+            undoInfo.toRow = action.row;
+            undoInfo.toCol = action.col;
+            undoInfo.hasMoved = minion.hasMoved;
+
+            const moveCost = ManaSystem.getMoveCost(minion);
+            this.moveMinion(minion, action.row, action.col);
+            player.mana -= moveCost;
+        } else if (action.type === 'attack') {
+            const minion = this.minionRegistry.get(action.minionId);
+            const target = this.getMinionAt(action.row, action.col);
+            
+            undoInfo.minionId = action.minionId;
+            undoInfo.fromRow = minion.position.row;
+            undoInfo.fromCol = minion.position.col;
+            undoInfo.toRow = action.row;
+            undoInfo.toCol = action.col;
+            undoInfo.hasAttacked = minion.hasAttacked;
+            undoInfo.hasMoved = minion.hasMoved;
+            
+            if (target) {
+                undoInfo.targetData = JSON.parse(JSON.stringify(target));
+                this.removeMinion(target);
+            }
+
+            const attackCost = ManaSystem.getAttackCost(minion);
+            player.mana -= attackCost;
+            minion.hasAttacked = true;
+
+            // Attack with move (if not skeleton)
+            if (minion.id !== 'skeleton' && target) {
+                this.moveMinion(minion, action.row, action.col);
+            }
+        }
+
+        this.currentPlayer = this.getOpponent();
+        return undoInfo;
+    }
+
+    undoSearchAction(undoInfo) {
+        const player = this.players[undoInfo.currentPlayer];
+        this.currentPlayer = undoInfo.currentPlayer;
+        player.mana = undoInfo.mana;
+        this.phase = undoInfo.phase;
+        this.winner = undoInfo.winner;
+
+        if (undoInfo.type === 'spawn') {
+            const minion = this.minionRegistry.get(undoInfo.instanceId);
+            this.board[undoInfo.row][undoInfo.col].minion = null;
+            this.minionRegistry.delete(undoInfo.instanceId);
+            player.hand.splice(undoInfo.index, 0, undoInfo.card);
+        } else if (undoInfo.type === 'move') {
+            const minion = this.minionRegistry.get(undoInfo.minionId);
+            this.board[undoInfo.toRow][undoInfo.toCol].minion = null;
+            this.board[undoInfo.fromRow][undoInfo.fromCol].minion = minion;
+            minion.position = { row: undoInfo.fromRow, col: undoInfo.fromCol };
+            minion.hasMoved = undoInfo.hasMoved;
+        } else if (undoInfo.type === 'attack') {
+            const minion = this.minionRegistry.get(undoInfo.minionId);
+            
+            // Revert move if attacker moved forward
+            if (minion.id !== 'skeleton' && undoInfo.targetData) {
+                this.board[undoInfo.toRow][undoInfo.toCol].minion = null;
+                this.board[undoInfo.fromRow][undoInfo.fromCol].minion = minion;
+                minion.position = { row: undoInfo.fromRow, col: undoInfo.fromCol };
+            }
+            
+            minion.hasAttacked = undoInfo.hasAttacked;
+            minion.hasMoved = undoInfo.hasMoved;
+
+            if (undoInfo.targetData) {
+                const target = undoInfo.targetData;
+                this.board[target.position.row][target.position.col].minion = target;
+                this.minionRegistry.set(target.instanceId, target);
+                if (target.id === 'villager') {
+                    this.players[target.owner].villager = target;
+                }
+            }
+        }
+    }
+
     placeMinion(minion, row, col) {
         if (!this.isValidPosition(row, col)) return false;
         if (this.board[row][col].minion) return false;
@@ -66,6 +180,10 @@ export class GameState {
 
         if (minion.id === 'villager') {
             this.players[minion.owner].villager = minion;
+        }
+
+        if (minion.onSpawn) {
+            minion.onSpawn(this);
         }
 
         return true;
@@ -111,8 +229,8 @@ export class GameState {
     }
 
     rehydrateMinion(minion, minionLoader) {
-        // wake up minion ... they're a bit confused
-        if (!minion || !minionLoader) return minion;
+        if (!minion || (minion.getValidMoves && minion.getValidAttacks)) return minion;
+        if (!minionLoader) return minion;
         const config = minionLoader.getConfig(minion.id);
         if (!config) return minion; // i don't know what this thing is
 
@@ -262,7 +380,8 @@ export class GameState {
             currentPlayer: this.currentPlayer,
             turnNumber: this.turnNumber,
             phase: this.phase,
-            winner: this.winner
+            winner: this.winner,
+            metadata: this.metadata
         });
     }
 
@@ -305,6 +424,47 @@ export class GameState {
         }
         
         return clonedState;
+    }
+
+    static fromJSON(rawData, minionLoader) {
+        const state = new GameState();
+        
+        state.currentPlayer = rawData.currentPlayer;
+        state.turnNumber = rawData.turnNumber;
+        state.phase = rawData.phase;
+        state.winner = rawData.winner;
+        state.nextMinionId = rawData.nextMinionId || 1;
+        state.metadata = rawData.metadata || { blue: {}, red: {} };
+
+        for (const color of ['red', 'blue']) {
+            const p = rawData.players[color];
+            state.players[color] = {
+                color: p.color,
+                mana: p.mana,
+                maxMana: p.maxMana,
+                hand: (p.hand || []).map(c => ({...c})),
+                deck: (p.deck || []).map(c => ({...c})),
+                villager: null,
+                catBonusMana: p.catBonusMana || 0
+            };
+        }
+
+        for (let r = 0; r < Board.ROWS; r++) {
+            for (let c = 0; c < Board.COLS; c++) {
+                const minionData = rawData.board[r][c].minion;
+                if (minionData) {
+                    const instance = state.rehydrateMinion(minionData, minionLoader);
+                    state.board[r][c].minion = instance;
+                    state.minionRegistry.set(instance.instanceId, instance);
+
+                    if (instance.id === 'villager') {
+                        state.players[instance.owner].villager = instance;
+                    }
+                }
+            }
+        }
+        
+        return state;
     }
 }
 

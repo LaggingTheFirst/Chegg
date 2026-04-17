@@ -49,7 +49,8 @@ export class InfoPanel {
 
         const metadata = this.gameState.metadata?.[this.player];
         const playerName = metadata ? metadata.username : (this.player === 'blue' ? 'Blue Player' : 'Red Player');
-        const playerElo = metadata ? ` <span style="font-size: 0.7rem; opacity: 0.7; font-weight: 400;">(${metadata.elo} Elo)</span>` : '';
+        const hasElo = metadata && typeof metadata.elo === 'number';
+        const playerElo = hasElo ? ` <span style="font-size: 0.7rem; opacity: 0.7; font-weight: 400;">(${metadata.elo} Elo)</span>` : '';
         const deckCount = playerData.deck.length;
         const handCount = playerData.hand.length;
 

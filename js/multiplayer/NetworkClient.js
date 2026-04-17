@@ -74,6 +74,7 @@ export class NetworkClient {
                 break;
             case 'room_created':
                 console.log('Room created:', payload.roomId);
+                document.dispatchEvent(new CustomEvent('chegg:room_created', { detail: payload }));
                 break;
             case 'auth_success':
                 this.authenticated = true;
@@ -123,12 +124,19 @@ export class NetworkClient {
     }
 
     send(event, payload) {
-        if (!this.socket || this.socket.readyState !== 1) {
-            this.connect();
-            // wait for open
+        console.log('[NetworkClient] send:', event, 'readyState:', this.socket?.readyState, 'auth:', this.authenticated);
+        
+        const canSend = this.socket && this.socket.readyState === 1 && (this.authenticated || event === 'auth');
+
+        if (!canSend) {
+            if (!this.socket || this.socket.readyState > 1) {
+                this.connect();
+            }
+            // wait for open AND authenticated
             const check = setInterval(() => {
-                if (this.socket.readyState === 1) {
+                if (this.socket.readyState === 1 && (this.authenticated || event === 'auth')) {
                     clearInterval(check);
+                    console.log('[NetworkClient] Delayed send after connect/auth:', event);
                     this.socket.send(JSON.stringify({ event, payload }));
                 }
             }, 100);
@@ -141,8 +149,8 @@ export class NetworkClient {
         this.send('join_matchmaking', { deck });
     }
 
-    createCustomRoom(name, timer, deck, saveGame = true) {
-        this.send('create_custom_room', { name, timer, deck, saveGame });
+    createCustomRoom(name, timer, deck, saveGame = true, isPrivate = false) {
+        this.send('create_custom_room', { name, timer, deck, saveGame, isPrivate });
     }
 
     joinCustomRoom(roomId, deck) {
@@ -159,6 +167,7 @@ export class NetworkClient {
     }
 
     sendAction(type, payload) {
+        console.log('[NetworkClient] sendAction:', type, payload);
         this.send('game_action', { type, payload });
     }
 
