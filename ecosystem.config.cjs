@@ -3,7 +3,10 @@ module.exports = {
         {
             name: 'chegg-server',
             script: 'server/index.js',
-            watch: false
+            watch: false,
+			env: {
+                PORT: 443
+            }
         },
         {
             name: 'chegg-bot',
