@@ -18,6 +18,7 @@ export class RoomManager {
     }
 
     addToMatchmaking(socket, data) {
+        if (this.abortTraining) this.abortTraining();
         this.matchmakingQueue.push({ socket, deck: data.deck, joinedAt: Date.now() });
 
         if (this.matchmakingQueue.length >= 2) {

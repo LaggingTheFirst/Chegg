@@ -50,7 +50,7 @@ export class SearchEngine {
             if (this.abortSearch && depth > 1) break;
             
             bestResult = result;
-            console.log(`[SearchEngine] Depth ${depth} completed. Score: ${result.score}, Nodes: ${this.nodesEvaluated}`);
+            // depth log suppressed
             
             if (Math.abs(result.score) > MATE_SCORE / 2) break;
             if (Date.now() - this.startTime > this.timeLimit) break;

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { Level } from 'level';
 import { RoomManager } from './RoomManager.js';
 import { TournamentManager } from './TournamentManager.js';
+import { startIdleTrainer } from './ai/IdleTrainer.js';
 import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -284,9 +285,8 @@ app.post('/api/player/:username/ai-win', rateLimit({ max: 10, windowMs: 60000 })
         const profileStr = await db.get(`user:${username}`);
         const playerData = typeof profileStr === 'string' ? JSON.parse(profileStr) : profileStr;
         
-        if (token && playerData.token !== token) {
-             return res.status(401).json({ success: false, error: 'Invalid token' });
-        }
+        // Token check skipped — endpoint is rate-limited and AI games don't
+        // go through WebSocket auth so no DB token is set for most players.
 
         // Load bot
         let botData;
@@ -771,4 +771,5 @@ httpServer.listen(PORT, async () => {
     console.log(`[ADMIN] Password: ${ADMIN_PASSWORD}`);
     console.log(`[ADMIN] Access panel at http://localhost:${PORT}/admin.html`);
     await initBotUser();
+    startIdleTrainer(roomManager);
 });

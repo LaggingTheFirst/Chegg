@@ -1727,28 +1727,32 @@ class CheggGame {
                     <div class="start-screen-content" style="text-align: center;">
                         <div class="start-screen-title" style="font-size: 2rem;">Finding Match...</div>
                         <div class="preloader-spinner" style="margin: 20px auto;"></div>
-                        <button class="action-btn secondary" onclick="window.location.reload()" style="width: 100%;">Cancel</button>
+                        <div id="ai-offer" style="display:none; margin-top: 12px;">
+                            <p style="color: var(--text-muted); margin-bottom: 10px; font-size: 0.9rem;">No opponents found yet.</p>
+                            <button class="action-btn primary" id="btn-play-ai" style="width: 100%; margin-bottom: 8px;">Play vs AI</button>
+                        </div>
+                        <button class="action-btn secondary" onclick="window.location.reload()" style="width: 100%; margin-top: 8px;">Cancel</button>
                     </div>
                 </div>
             `;
             this.networkClient.findMatch(deck);
-            
-            // A 20 sec timer incase a real match isnt found 
+
+            // After 10s, offer the AI as an optional unranked game
             this.matchmakingTimeout = setTimeout(() => {
-                const titleEl = document.querySelector('.start-screen-title');
-                if (titleEl && titleEl.innerText === 'Finding Match...') {
-                    console.log('Matchmaking timeout reached. Falling back to AI game.');
-                    
-                    // Force disconnect from matchmaking to avoid phantom connections
-                    if (this.networkClient.socket) {
-                        this.networkClient.socket.onclose = null; // Prevent the error popup
-                        this.networkClient.socket.close();
-                    }
-                    
-                    // Fallback to AI Match
-                    this.startAiGame('balanced'); 
+                const aiOffer = document.getElementById('ai-offer');
+                if (aiOffer) aiOffer.style.display = 'block';
+
+                const btnPlayAi = document.getElementById('btn-play-ai');
+                if (btnPlayAi) {
+                    btnPlayAi.addEventListener('click', () => {
+                        if (this.networkClient.socket) {
+                            this.networkClient.socket.onclose = null;
+                            this.networkClient.socket.close();
+                        }
+                        this.startAiGame('balanced');
+                    });
                 }
-            }, 20000);
+            }, 10000);
         });
     }
 

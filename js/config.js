@@ -1,5 +1,5 @@
 export const CONFIG = {
-    SERVER_URL: 'https://sonic-declare-implemented-meat.trycloudflare.com',
+    SERVER_URL: 'https://chegg.hydrophobicmc.us',
 
     get API_URL() {
         return `${this.SERVER_URL}/api`;
