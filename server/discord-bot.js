@@ -209,7 +209,7 @@ client.on('interactionCreate', async (interaction) => {
     if (commandName === 'restart') {
         await interaction.reply('Restarting server...');
         try {
-            const { stdout } = await execAsync('npx pm2 restart chegg-server');
+            const { stdout } = await execAsync('npx pm2 restart chegg-server chegg-bot');
             await interaction.followUp(`Done. \`\`\`\n${stdout.slice(0, 1900)}\n\`\`\``);
         } catch (err) {
             await interaction.followUp(`Restart failed: \`\`\`\n${err.message.slice(0, 1900)}\n\`\`\``);
@@ -223,7 +223,7 @@ client.on('interactionCreate', async (interaction) => {
             const { stdout: pullOut, stderr: pullErr } = await execAsync('git pull');
             await interaction.followUp(`\`\`\`\n${(pullOut || pullErr || 'No output').slice(0, 1900)}\n\`\`\``);
             await interaction.followUp('Restarting server...');
-            const { stdout: restartOut } = await execAsync('npx pm2 restart chegg-server');
+            const { stdout: restartOut } = await execAsync('npx pm2 restart chegg-server chegg-bot');
             await interaction.followUp(`Done. \`\`\`\n${restartOut.slice(0, 1900)}\n\`\`\``);
         } catch (err) {
             await interaction.followUp(`Failed: \`\`\`\n${err.message.slice(0, 1900)}\n\`\`\``);
