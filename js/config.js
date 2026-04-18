@@ -12,7 +12,7 @@ export const CONFIG = {
         return `${protocol}//${urlWithoutProtocol}`;
     },
 
-    SERVER_URL: 'http://localhost:1109',
+    // SERVER_URL: 'http://localhost:1109',
 };
 
 // Export individual values for convenience
