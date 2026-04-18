@@ -217,7 +217,7 @@ class CheggGame {
                     </div>
                     
                     <div class="start-screen-footer">
-                        <p>Designed by Gerg • Jiyath5516F/Minecraft-CSS • <a href="https://docs.google.com/document/d/1TM736HhNsh2nz8l3L-a6PuWAVxbnBSF__NB7qX7Wdlw/edit?tab=t.0" target="_blank">wtf are the rules?</a></p>
+                        <p><a href="https://discord.gg/2RFgNnuqGr" targer="_blank">Discord here</a> • Jiyath5516F/Minecraft-CSS • <a href="https://docs.google.com/document/d/1TM736HhNsh2nz8l3L-a6PuWAVxbnBSF__NB7qX7Wdlw/edit?tab=t.0" target="_blank">wtf are the rules?</a></p>
                     </div>
                 </div>
             </div>
