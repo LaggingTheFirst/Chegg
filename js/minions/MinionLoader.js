@@ -96,11 +96,14 @@ const BUILT_IN_MINIONS = {
         id: 'phantom',
         name: 'Phantom',
         cost: 3,
-        movement: { pattern: 'surrounding', range: 2 },
-        attack: { pattern: 'surrounding', range: 2 },
+        movement: { pattern: 'diagonal', range: 2 },
+        attack: [
+            { pattern: 'diagonal', range: 2 },
+            { pattern: 'lateral', range: 2, exactRange: true }
+        ],
         onlyDarkTiles: true,
         movesToAttack: false,
-        description: 'Highly mobile but can only be on dark tiles.'
+        description: 'Highly mobile but can only be on dark tiles. Attacks diagonally up to 2 or laterally exactly 2 tiles.'
     },
     enderman: {
         id: 'enderman',

@@ -64,7 +64,11 @@ export class NetworkClient {
                 this.game.updateTimer(payload);
                 break;
             case 'error':
-                this.game.showError(payload.message);
+                if (payload.message === 'Room not found' && !this.game.boardUI) {
+                    this.game.showRoomNotFound();
+                } else {
+                    this.game.showError(payload.message);
+                }
                 break;
             case 'custom_rooms_list':
                 if (this.pendingCallbacks.has('custom_rooms_list')) {
@@ -75,6 +79,10 @@ export class NetworkClient {
             case 'room_created':
                 console.log('Room created:', payload.roomId);
                 document.dispatchEvent(new CustomEvent('chegg:room_created', { detail: payload }));
+                break;
+            case 'match_started':
+                console.log('Match started in room:', payload.roomId);
+                document.dispatchEvent(new CustomEvent('chegg:match_started', { detail: payload }));
                 break;
             case 'auth_success':
                 this.authenticated = true;
@@ -149,8 +157,8 @@ export class NetworkClient {
         this.send('join_matchmaking', { deck });
     }
 
-    createCustomRoom(name, timer, deck, saveGame = true, isPrivate = false) {
-        this.send('create_custom_room', { name, timer, deck, saveGame, isPrivate });
+    createCustomRoom(name, timer, deck, saveGame = true, isPrivate = false, isRanked = false) {
+        this.send('create_custom_room', { name, timer, deck, saveGame, isPrivate, isRanked });
     }
 
     joinCustomRoom(roomId, deck) {

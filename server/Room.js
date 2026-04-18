@@ -54,8 +54,14 @@ export class Room {
     addSpectator(socket) {
         this.spectators.push(socket);
         this.send(socket, 'player_assigned', { color: 'spectator' });
-        // Send current state
-        this.send(socket, 'state_update', { state: this.gameState.serialize() });
+        // Send current state with both hands masked
+        const state = JSON.parse(this.gameState.serialize());
+        for (const color of ['blue', 'red']) {
+            if (state.players[color]) {
+                state.players[color].hand = state.players[color].hand.map(() => ({ hidden: true }));
+            }
+        }
+        this.send(socket, 'state_update', { state: JSON.stringify(state) });
         // Send timer if active
         if (this.timeLeft > 0) {
             this.send(socket, 'timer_tick', { timeLeft: this.timeLeft });
@@ -165,12 +171,23 @@ export class Room {
     async saveToDB() {
         if (!this.config.saveGame) return;
         try {
+            const metadata = {
+                blue: {
+                    username: this.players.find(p => p.color === 'blue')?.socket.username || 'Blue',
+                    elo: this.players.find(p => p.color === 'blue')?.socket.elo || 400
+                },
+                red: {
+                    username: this.players.find(p => p.color === 'red')?.socket.username || 'Red',
+                    elo: this.players.find(p => p.color === 'red')?.socket.elo || 400
+                }
+            };
             await this.db.put(`game:${this.id}`, {
                 id: this.id,
                 name: this.config.name,
                 winner: this.gameState.winner,
                 turns: this.gameState.turnNumber,
                 log: this.gameLog,
+                metadata,
                 finalState: this.gameState.serialize(),
                 timestamp: Date.now()
             });
@@ -262,6 +279,7 @@ export class Room {
         // payload: { attackerId, targetRow, targetCol }
         const minion = this.gameState.minionRegistry.get(payload.attackerId);
         if (!minion || minion.owner !== color) return false;
+        if (minion.hasAttacked || minion.hasDashed) return false;
 
         const target = this.gameState.getMinionAt(payload.targetRow, payload.targetCol);
         if (!target || target.owner === color) return false;
@@ -570,9 +588,15 @@ export class Room {
             this.send(p.socket, 'state_update', { state: JSON.stringify(maskedState) });
         }
 
-        // Broadcast to spectators (full state)
+        // Broadcast to spectators (both hands masked)
         for (const s of this.spectators) {
-            this.send(s, 'state_update', { state: JSON.stringify(fullState) });
+            const spectatorState = JSON.parse(JSON.stringify(fullState));
+            for (const color of ['blue', 'red']) {
+                if (spectatorState.players[color]) {
+                    spectatorState.players[color].hand = spectatorState.players[color].hand.map(() => ({ hidden: true }));
+                }
+            }
+            this.send(s, 'state_update', { state: JSON.stringify(spectatorState) });
         }
     }
 

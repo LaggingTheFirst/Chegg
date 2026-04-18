@@ -224,6 +224,81 @@ app.get('/api/player/:username', rateLimit({ max: 60, windowMs: 60000 }), async 
     }
 });
 
+app.post('/api/player/:username/rename', rateLimit({ max: 10, windowMs: 60000 }), async (req, res) => {
+    try {
+        const oldUsername = req.params.username;
+        const { newUsername, token } = req.body;
+
+        if (!newUsername || !token) {
+            return res.status(400).json({ success: false, error: 'newUsername and token are required' });
+        }
+
+        const trimmed = newUsername.trim();
+        if (!trimmed || trimmed.length < 2 || trimmed.length > 24) {
+            return res.status(400).json({ success: false, error: 'Username must be 2-24 characters' });
+        }
+
+        console.log(`[RENAME] ${oldUsername} → ${trimmed}`);
+
+        // Verify old user exists and token matches
+        let oldData;
+        try {
+            oldData = await db.get(`user:${oldUsername}`);
+            if (typeof oldData === 'string') oldData = JSON.parse(oldData);
+        } catch (err) {
+            return res.status(404).json({ success: false, error: 'Player not found' });
+        }
+
+        if (oldData.token !== token) {
+            return res.status(403).json({ success: false, error: 'Invalid token' });
+        }
+
+        // Check new username isn't taken (skip if same name, e.g. case change)
+        if (trimmed.toLowerCase() !== oldUsername.toLowerCase()) {
+            try {
+                const existing = await db.get(`user:${trimmed}`);
+                if (existing !== undefined && existing !== null) {
+                    console.log(`[RENAME] Conflict: user:${trimmed} exists:`, existing);
+                    return res.status(409).json({ success: false, error: 'Username already taken' });
+                }
+            } catch (err) {
+                if (err.code !== 'LEVEL_NOT_FOUND') throw err;
+            }
+        }
+
+        // Write new entry, delete old
+        const newData = { ...oldData, username: trimmed };
+        await db.put(`user:${trimmed}`, newData);
+        await db.del(`user:${oldUsername}`);
+
+        res.json({ success: true, username: trimmed });
+    } catch (err) {
+        console.error('Rename error:', err);
+        res.status(500).json({ success: false, error: 'Failed to rename player' });
+    }
+});
+
+// Lookup username by token (for autofill on import)
+app.post('/api/token/lookup', rateLimit({ max: 20, windowMs: 60000 }), async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ success: false, error: 'token required' });
+
+        for await (const [key, value] of db.iterator()) {
+            if (!key.startsWith('user:')) continue;
+            const data = typeof value === 'string' ? JSON.parse(value) : value;
+            if (data.token === token && !data.isBot) {
+                return res.json({ success: true, username: key.substring(5), elo: data.elo || 400 });
+            }
+        }
+
+        res.status(404).json({ success: false, error: 'Token not found' });
+    } catch (err) {
+        console.error('Token lookup error:', err);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
 app.get('/api/player/:username/matches', rateLimit({ max: 60, windowMs: 60000 }), async (req, res) => {
     try {
         const username = req.params.username;
@@ -232,41 +307,42 @@ app.get('/api/player/:username/matches', rateLimit({ max: 60, windowMs: 60000 })
         const matches = [];
         
         for await (const [key, value] of db.iterator()) {
-            if (key.startsWith('game:')) {
-                const game = typeof value === 'string' ? JSON.parse(value) : value;
-                
-                if (!game.finalState) continue;
-                
-                const state = typeof game.finalState === 'string' ? JSON.parse(game.finalState) : game.finalState;
-                const metadata = state.metadata || {};
-                
-                const bluePlayer = metadata.blue?.username;
-                const redPlayer = metadata.red?.username;
-                
-                if (bluePlayer === username || redPlayer === username) {
-                    const playerColor = bluePlayer === username ? 'blue' : 'red';
-                    const opponentColor = playerColor === 'blue' ? 'red' : 'blue';
-                    const opponent = playerColor === 'blue' ? redPlayer : bluePlayer;
-                    const result = game.winner === playerColor ? 'win' : 'loss';
-                    
-                    matches.push({
-                        id: game.id,
-                        opponent: opponent || 'Unknown',
-                        result,
-                        turns: game.turns || 0,
-                        timestamp: game.timestamp || 0,
-                        playerColor
-                    });
-                }
+            if (!key.startsWith('game:')) continue;
+
+            const game = typeof value === 'string' ? JSON.parse(value) : value;
+
+            // Only completed games have a winner
+            if (!game.winner) continue;
+
+            const state = game.finalState
+                ? (typeof game.finalState === 'string' ? JSON.parse(game.finalState) : game.finalState)
+                : null;
+
+            const metadata = state?.metadata || game.metadata || {};
+            const bluePlayer = metadata.blue?.username;
+            const redPlayer = metadata.red?.username;
+
+            if (bluePlayer === username || redPlayer === username) {
+                const playerColor = bluePlayer === username ? 'blue' : 'red';
+                const opponent = playerColor === 'blue' ? redPlayer : bluePlayer;
+                const result = game.winner === playerColor ? 'win' : 'loss';
+
+                matches.push({
+                    id: game.id,
+                    opponent: opponent || 'Unknown',
+                    result,
+                    turns: game.turns || 0,
+                    timestamp: game.timestamp || 0,
+                    playerColor
+                });
             }
         }
         
         matches.sort((a, b) => b.timestamp - a.timestamp);
-        const limitedMatches = matches.slice(0, limit);
         
         res.json({
             success: true,
-            matches: limitedMatches,
+            matches: matches.slice(0, limit),
             total: matches.length
         });
     } catch (err) {
@@ -529,6 +605,10 @@ app.get('/api/admin/debug-keys', verifyAdminToken, async (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, '../')));
+
+app.get('/match/:roomId', (req, res) => {
+    res.sendFile(path.join(__dirname, '../index.html'));
+});
 
 app.get('/profile', (req, res) => {
     res.sendFile(path.join(__dirname, '../profile.html'));

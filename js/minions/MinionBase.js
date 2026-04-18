@@ -71,6 +71,7 @@ export class MinionBase {
     getValidAttacks(gameState) {
         if (this.cannotAttack || !this.attack) return [];
         if (!this.position) return [];
+        if (this.hasDashed || this.hasAttacked) return [];
 
         const { row, col } = this.position;
         const attacks = Array.isArray(this.attack) ? this.attack : [this.attack];

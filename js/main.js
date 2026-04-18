@@ -71,12 +71,17 @@ class CheggGame {
         const urlParams = new URLSearchParams(window.location.search);
         const joinRoomId = urlParams.get('join');
         const spectateRoomId = urlParams.get('spectate');
+        const pathMatch = window.location.pathname.match(/^\/match\/(.+)$/);
         const tournamentJoin = localStorage.getItem('tournament_join');
 
         if (tournamentJoin) {
             localStorage.removeItem('tournament_join');
             const { tournamentId, username } = JSON.parse(tournamentJoin);
             this.joinTournamentMatch(tournamentId, username);
+        } else if (pathMatch) {
+            // /match/<roomId> is a spectate-only URL
+            this.isOnline = true;
+            this.spectateRoomFromUrl(pathMatch[1]);
         } else if (joinRoomId) {
             this.isOnline = true;
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -186,6 +191,9 @@ class CheggGame {
                         <button class="action-btn primary" id="btn-matchmaking">
                             Find Online Match
                         </button>
+                        <button class="action-btn primary" id="btn-invite-friend">
+                            Invite a Friend
+                        </button>
                         <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
                             <button class="action-btn primary" id="btn-vs-ai" style="flex: 1; width: 45%;">
                                 Play vs AI
@@ -233,6 +241,14 @@ class CheggGame {
                 return;
             }
             this.startMatchmaking();
+        });
+
+        container.querySelector('#btn-invite-friend').addEventListener('click', () => {
+            if (!this.networkClient.authManager.isAuthenticated()) {
+                this.showProfileModal(() => this.inviteFriend());
+                return;
+            }
+            this.inviteFriend();
         });
 
         container.querySelector('#btn-custom-online').addEventListener('click', () => {
@@ -761,6 +777,33 @@ class CheggGame {
         });
     }
 
+    inviteFriend() {
+        const overlay = createModalOverlay({ id: 'invite-options' });
+        overlay.innerHTML = `
+            <div class="modal" style="width: 360px; text-align: center;">
+                <div class="modal-title">Invite a Friend</div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">Choose game type:</p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="action-btn primary" id="btn-invite-ranked">Ranked</button>
+                    <button class="action-btn secondary" id="btn-invite-unranked">Unranked</button>
+                    <button class="action-btn secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const start = (isRanked) => {
+            overlay.remove();
+            this.selectDeck((deck) => {
+                this.showRoomWaitingMenu();
+                this.networkClient.createCustomRoom('Invite Game', 60, deck, true, true, isRanked);
+            });
+        };
+
+        overlay.querySelector('#btn-invite-ranked').addEventListener('click', () => start(true));
+        overlay.querySelector('#btn-invite-unranked').addEventListener('click', () => start(false));
+    }
+
     showRoomWaitingMenu() {
         const overlay = createModalOverlay({ id: 'room-waiting' });
         overlay.innerHTML = `
@@ -774,8 +817,10 @@ class CheggGame {
 
         const onRoomCreated = (e) => {
             const roomId = e.detail.roomId;
-            const joinUrl = window.location.origin + window.location.pathname + '?join=' + roomId;
-            const spectateUrl = window.location.origin + window.location.pathname + '?spectate=' + roomId;
+            const joinUrl = `${window.location.origin}${window.location.pathname}?join=${roomId}`;
+            const spectateUrl = `${window.location.origin}/match/${roomId}`;
+            this.spectateUrl = spectateUrl;
+            // Don't update the player's URL — /match/ is for spectators only
 
             overlay.innerHTML = `
                 <div class="modal" style="width: 450px;">
@@ -943,6 +988,7 @@ class CheggGame {
                 <div class="turn-number" id="turn-number">Turn 1</div>
                 <div class="header-actions">
                     <button class="action-btn secondary btn-compact" id="btn-cancel">Cancel</button>
+                    <button class="action-btn secondary btn-compact" id="btn-spectate-link" style="display: none;" title="Copy spectate link">Spectate URL</button>
                     <button class="action-btn secondary btn-compact" id="btn-forfeit" style="display: none;">Forfeit</button>
                 </div>
             </header>
@@ -991,6 +1037,28 @@ class CheggGame {
 
         if (this.isOnline) {
             document.getElementById('btn-forfeit').style.display = 'block';
+
+            const spectateBtn = document.getElementById('btn-spectate-link');
+            if (spectateBtn) {
+                const showBtn = (url) => {
+                    spectateBtn.style.display = 'block';
+                    spectateBtn.onclick = () => {
+                        navigator.clipboard.writeText(url);
+                        spectateBtn.textContent = '✓ Copied!';
+                        setTimeout(() => { spectateBtn.textContent = '📋 Spectate'; }, 2000);
+                    };
+                };
+
+                if (this.spectateUrl) {
+                    showBtn(this.spectateUrl);
+                } else {
+                    // Poll until match_started sets it (should be near-instant)
+                    const poll = setInterval(() => {
+                        const u = this.spectateUrl;
+                        if (u) { clearInterval(poll); showBtn(u); }
+                    }, 100);
+                }
+            }
         }
 
         // clicking away cancels stuff
@@ -1014,7 +1082,13 @@ class CheggGame {
         this.redPanel.render();
         
         if (this.isOnline || this.aiEnabled) {
-            this.currentHand.setPlayer(this.playerColor);
+            if (this.isSpectator()) {
+                // Hide hand entirely for spectators
+                const handContainer = document.querySelector('#current-hand-container');
+                if (handContainer) handContainer.style.display = 'none';
+            } else {
+                this.currentHand.setPlayer(this.playerColor);
+            }
         } else {
             this.currentHand.setPlayer(this.gameState.currentPlayer);
         }
@@ -1727,6 +1801,7 @@ class CheggGame {
                     <div class="start-screen-content" style="text-align: center;">
                         <div class="start-screen-title" style="font-size: 2rem;">Finding Match...</div>
                         <div class="preloader-spinner" style="margin: 20px auto;"></div>
+                        <div id="spectate-link-area" style="display:none; margin-top: 12px; font-size: 0.8rem; color: var(--text-muted);"></div>
                         <div id="ai-offer" style="display:none; margin-top: 12px;">
                             <p style="color: var(--text-muted); margin-bottom: 10px; font-size: 0.9rem;">No opponents found yet.</p>
                             <button class="action-btn primary" id="btn-play-ai" style="width: 100%; margin-bottom: 8px;">Play vs AI</button>
@@ -1737,6 +1812,27 @@ class CheggGame {
             `;
             this.networkClient.findMatch(deck);
 
+            // When match is found, show spectate link
+            const onMatchStarted = (e) => {
+                const roomId = e.detail.roomId;
+                const spectateUrl = `${window.location.origin}/match/${roomId}`;
+                this.spectateUrl = spectateUrl;
+                // Don't update the player's URL — /match/ is for spectators only
+                const area = document.getElementById('spectate-link-area');
+                if (area) {
+                    area.style.display = 'block';
+                    area.innerHTML = `
+                        <p style="margin-bottom: 6px;">Match found! Share spectate link:</p>
+                        <div style="display: flex; gap: 6px; justify-content: center;">
+                            <input type="text" value="${spectateUrl}" readonly class="action-btn secondary" style="flex: 1; text-align: left; cursor: text; font-size: 0.7rem; max-width: 280px;">
+                            <button class="action-btn primary" style="font-size: 0.7rem; padding: 4px 8px;" onclick="navigator.clipboard.writeText('${spectateUrl}')">Copy</button>
+                        </div>
+                    `;
+                }
+                document.removeEventListener('chegg:match_started', onMatchStarted);
+            };
+            document.addEventListener('chegg:match_started', onMatchStarted);
+
             // After 10s, offer the AI as an optional unranked game
             this.matchmakingTimeout = setTimeout(() => {
                 const aiOffer = document.getElementById('ai-offer');
@@ -1745,6 +1841,7 @@ class CheggGame {
                 const btnPlayAi = document.getElementById('btn-play-ai');
                 if (btnPlayAi) {
                     btnPlayAi.addEventListener('click', () => {
+                        document.removeEventListener('chegg:match_started', onMatchStarted);
                         if (this.networkClient.socket) {
                             this.networkClient.socket.onclose = null;
                             this.networkClient.socket.close();
@@ -1764,11 +1861,22 @@ class CheggGame {
             this.matchmakingTimeout = null;
         }
 
-        // No need to remove anything since we're using the game-container now
-
         if (!this.gameState) {
             this.startGame([], [], true);
-            this.playerColor = this.networkClient.color;
+            // Preserve 'spectator' if already set; otherwise use assigned color
+            if (this.playerColor !== 'spectator') {
+                this.playerColor = this.networkClient.color || 'blue';
+            }
+            if (this.playerColor === 'blue') {
+                this.boardUI.setFlip(true);
+            }
+        } else if (!this.boardUI) {
+            // gameState exists but UI was never set up (e.g. came from matchmaking screen)
+            this.isOnline = true;
+            if (this.playerColor !== 'spectator') {
+                this.playerColor = this.networkClient.color || 'blue';
+            }
+            this.setupUI();
             if (this.playerColor === 'blue') {
                 this.boardUI.setFlip(true);
             }
@@ -1848,6 +1956,26 @@ class CheggGame {
         document.body.appendChild(overlay);
     }
 
+    showRoomNotFound() {
+        window.history.replaceState({}, '', '/');
+        this.showStartScreen();
+
+        // Wait a tick for the start screen to render, then show the modal
+        setTimeout(() => {
+            const overlay = createModalOverlay({ id: 'room-not-found' });
+            overlay.innerHTML = `
+                <div class="modal" style="width: 360px; text-align: center;">
+                    <div class="modal-title">Room Not Found</div>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 16px 0;">
+                        This match has already ended or the link is invalid.
+                    </p>
+                    <button class="action-btn primary" style="width: 100%;" onclick="this.closest('.modal-overlay').remove()">Back to Menu</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }, 50);
+    }
+
     showError(message) {
         console.error('[GAME ERROR]', message);
 
@@ -1916,10 +2044,12 @@ class CheggGame {
 
                     <div style="background: rgba(239, 68, 68, 0.1); padding: 10px; border-radius: 0px;">
                         <p style="font-size: 0.7rem; color: var(--player-red);">
-                            <strong>Warning:</strong> Pasting a new token will overwrite your current account!
+                            Import a token to restore an existing account. Your username will be filled in automatically.
                         </p>
                         <button class="action-btn secondary" id="btn-import-token" style="font-size: 0.7rem; width: 100%; margin-top: 5px;">Import Existing Token</button>
                     </div>
+
+                    <div id="prof-status" style="font-size: 0.75rem; color: var(--text-muted); text-align: center; min-height: 1em;"></div>
 
                     <button class="action-btn primary" id="btn-save-profile" style="width: 100%; padding: 12px; margin-top: 10px;">Save & Connect</button>
                 </div>
@@ -1933,28 +2063,69 @@ class CheggGame {
         document.body.appendChild(overlay);
 
         const tokenInput = overlay.querySelector('#prof-token');
+        const usernameInput = overlay.querySelector('#prof-username');
+        const statusEl = overlay.querySelector('#prof-status');
+
         overlay.querySelector('#btn-show-token').addEventListener('click', () => {
             tokenInput.type = tokenInput.type === 'password' ? 'text' : 'password';
         });
 
-        overlay.querySelector('#btn-import-token').addEventListener('click', () => {
+        overlay.querySelector('#btn-import-token').addEventListener('click', async () => {
             const newToken = prompt('Paste your Secret Token here:');
-            if (newToken) {
-                tokenInput.value = newToken;
+            if (!newToken) return;
+            tokenInput.value = newToken;
+            statusEl.textContent = 'Looking up account...';
+            try {
+                const res = await fetch(`${API_URL}/token/lookup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: newToken })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    usernameInput.value = data.username;
+                    statusEl.textContent = `Found account: ${data.username} (${data.elo} ELO)`;
+                } else {
+                    statusEl.textContent = 'Token not found — a new account will be created on save.';
+                }
+            } catch {
+                statusEl.textContent = 'Could not reach server to look up token.';
             }
         });
 
-        overlay.querySelector('#btn-save-profile').addEventListener('click', () => {
-            const username = overlay.querySelector('#prof-username').value.trim();
+        overlay.querySelector('#btn-save-profile').addEventListener('click', async () => {
+            const newUsername = usernameInput.value.trim();
             const token = tokenInput.value.trim();
 
-            if (!username) {
+            if (!newUsername) {
                 alert('Please enter a username');
                 return;
             }
 
-            auth.setCredentials(username, token);
-            this.networkClient.connect(); // Reconnect with new auth
+            const oldUsername = creds.username;
+            const isRename = isAuthenticated && oldUsername && newUsername !== oldUsername && token === creds.token;
+
+            if (isRename) {
+                statusEl.textContent = 'Renaming...';
+                try {
+                    const res = await fetch(`${API_URL}/player/${encodeURIComponent(oldUsername)}/rename`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ newUsername, token })
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                        statusEl.textContent = data.error || 'Rename failed';
+                        return;
+                    }
+                } catch {
+                    statusEl.textContent = 'Could not reach server to rename.';
+                    return;
+                }
+            }
+
+            auth.setCredentials(newUsername, token);
+            this.networkClient.connect();
 
             overlay.remove();
             if (onComplete) onComplete();

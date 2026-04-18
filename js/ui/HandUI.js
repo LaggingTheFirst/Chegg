@@ -33,6 +33,7 @@ export class HandUI {
         this.handElement.innerHTML = '';
 
         const playerData = this.gameState.players[this.player];
+        if (!playerData) return; // spectator or invalid player
         const isSetup = this.gameState.phase === 'setup';
         const canAfford = (cost) => (isSetup && cost === 0) || (!isSetup && playerData.mana >= cost);
         const isCurrentPlayer = this.gameState.currentPlayer === this.player;

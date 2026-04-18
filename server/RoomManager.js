@@ -38,25 +38,18 @@ export class RoomManager {
             this.playersInRooms.set(p1.socket.id, roomId);
             this.playersInRooms.set(p2.socket.id, roomId);
 
+            // Notify both players of the room ID so they can share spectate links
+            const matchInfo = { roomId };
+            p1.socket.send(JSON.stringify({ event: 'match_started', payload: matchInfo }));
+            p2.socket.send(JSON.stringify({ event: 'match_started', payload: matchInfo }));
+
             room.start();
         }
     }
 
     checkQueueTimeouts() {
-        const now = Date.now();
-        const expiredEntries = [];
-
-        for (let i = this.matchmakingQueue.length - 1; i >= 0; i--) {
-            const entry = this.matchmakingQueue[i];
-            if (now - entry.joinedAt >= QUEUE_TIMEOUT_MS) {
-                expiredEntries.push(entry);
-                this.matchmakingQueue.splice(i, 1);
-            }
-        }
-
-        for (const entry of expiredEntries) {
-            this.spawnBotMatch(entry);
-        }
+        // No-op: players wait for real opponents only.
+        // Bot matches are only spawned via the client-side "Play vs AI" button.
     }
 
     async spawnBotMatch(queueEntry) {
@@ -180,7 +173,8 @@ export class RoomManager {
             name: data.name || roomId,
             timer: data.timer || 60,
             saveGame: data.saveGame !== false,
-            isPrivate: data.isPrivate || false
+            isPrivate: data.isPrivate || false,
+            isRanked: data.isRanked || false
         });
 
         this.rooms.set(roomId, room);
