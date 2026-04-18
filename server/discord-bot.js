@@ -163,38 +163,22 @@ client.on('interactionCreate', async (interaction) => {
     if (commandName === 'live') {
         await interaction.deferReply();
         try {
-            const { Level } = await import('level');
-            const db = new Level('./db/chegg-games', { valueEncoding: 'json' });
+            const res = await fetch(`${API}/live`);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error);
 
-            // Read recent games to find active ones (saved within last 10 minutes)
-            const tenMinAgo = Date.now() - 10 * 60 * 1000;
-            const active = [];
-            for await (const [key, value] of db.iterator()) {
-                if (!key.startsWith('game:')) continue;
-                const game = typeof value === 'string' ? JSON.parse(value) : value;
-                if (game.finalState) continue; // completed
-                if (game.lastUpdate && game.lastUpdate > tenMinAgo) {
-                    active.push({ roomId: key.substring(5), game });
-                }
-            }
-            await db.close();
-
-            if (active.length === 0) {
+            if (data.games.length === 0) {
                 await interaction.editReply({ embeds: [new EmbedBuilder().setColor(0x5865f2).setTitle('🎮 Live Games').setDescription('No active games right now.')] });
                 return;
             }
 
-            const rows = active.map(({ roomId, game }) => {
-                const state = game.lastState ? (typeof game.lastState === 'string' ? JSON.parse(game.lastState) : game.lastState) : null;
-                const blue = state?.metadata?.blue?.username || 'Blue';
-                const red = state?.metadata?.red?.username || 'Red';
-                const turn = state?.turnNumber || '?';
-                return `⚔️ **${blue}** vs **${red}** — Turn ${turn}\n[Spectate](${BASE_URL}/match/${roomId})`;
-            }).join('\n\n');
+            const rows = data.games.map(g =>
+                `⚔️ **${g.blue}** vs **${g.red}** — Turn ${g.turn}\n[Spectate](${BASE_URL}/match/${g.roomId})`
+            ).join('\n\n');
 
             const embed = new EmbedBuilder()
                 .setColor(0x5865f2)
-                .setTitle(`🎮 Live Games (${active.length})`)
+                .setTitle(`🎮 Live Games (${data.games.length})`)
                 .setDescription(rows);
 
             await interaction.editReply({ embeds: [embed] });
@@ -249,13 +233,10 @@ client.on('interactionCreate', async (interaction) => {
 
     if (commandName === 'players') {
         try {
-            const { Level } = await import('level');
-            const db = new Level('./db/chegg-games', { valueEncoding: 'json' });
-            let count = 0;
-            for await (const [key] of db.iterator()) {
-                if (key.startsWith('user:')) count++;
-            }
-            await db.close();
+            const res = await fetch(`${API}/leaderboard?limit=1000`);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error);
+            const count = data.players.filter(p => !p.isBot).length;
             await interaction.reply(`Total registered players: **${count}**`);
         } catch (err) {
             await interaction.reply(`Failed to read player count: ${err.message}`);

@@ -610,6 +610,26 @@ app.get('/match/:roomId', (req, res) => {
     res.sendFile(path.join(__dirname, '../index.html'));
 });
 
+app.get('/api/live', rateLimit({ max: 30, windowMs: 60000 }), (req, res) => {
+    try {
+        const live = [];
+        for (const [roomId, room] of roomManager.rooms) {
+            if (room.players.length < 2) continue;
+            if (room.gameState.phase === 'gameOver') continue;
+            live.push({
+                roomId,
+                blue: room.gameState.metadata?.blue?.username || 'Blue',
+                red: room.gameState.metadata?.red?.username || 'Red',
+                turn: room.gameState.turnNumber || 0
+            });
+        }
+        res.json({ success: true, games: live });
+    } catch (err) {
+        console.error('Live games error:', err);
+        res.status(500).json({ success: false, error: 'Failed to fetch live games' });
+    }
+});
+
 app.get('/profile', (req, res) => {
     res.sendFile(path.join(__dirname, '../profile.html'));
 });
