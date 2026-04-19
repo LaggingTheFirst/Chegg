@@ -3,7 +3,23 @@
 
 <head>
     <meta charset="UTF-8">
-    <base href="/">
+    <script>
+        // Set base href dynamically so assets work on both / and /Chegg/
+        (function() {
+            var base = document.createElement('base');
+            // On GitHub Pages the pathname starts with /Chegg/
+            var isGHPages = window.location.hostname.includes('github.io');
+            base.href = isGHPages ? '/Chegg/' : '/';
+            document.head.appendChild(base);
+
+            // GH Pages SPA redirect: decode path from ?p= query param
+            var search = window.location.search;
+            if (search.startsWith('?p=')) {
+                var path = decodeURIComponent(search.slice(3));
+                window.history.replaceState(null, '', path || '/');
+            }
+        })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="description"
         content="CHEGG - A turn-based deck-building strategy game. Build your deck, spawn minions, and defeat your opponent's Villager!">

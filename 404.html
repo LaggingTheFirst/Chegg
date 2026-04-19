@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script>
+        // GitHub Pages SPA fallback — redirect to index.html with path encoded as ?p=
+        var path = window.location.pathname.replace('/Chegg', '') + window.location.search + window.location.hash;
+        window.location.replace('/Chegg/?p=' + encodeURIComponent(path));
+    </script>
+</head>
+<body></body>
+</html>

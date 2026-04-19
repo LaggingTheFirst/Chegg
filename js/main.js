@@ -71,7 +71,7 @@ class CheggGame {
         const urlParams = new URLSearchParams(window.location.search);
         const joinRoomId = urlParams.get('join');
         const spectateRoomId = urlParams.get('spectate');
-        const pathMatch = window.location.pathname.match(/^\/match\/(.+)$/);
+        const pathMatch = window.location.pathname.match(/\/match\/(.+)$/);
         const tournamentJoin = localStorage.getItem('tournament_join');
 
         if (tournamentJoin) {
@@ -172,6 +172,12 @@ class CheggGame {
                 if (modal) modal.remove();
             }
         }, 100);
+    }
+
+    getSpectateUrl(roomId) {
+        const isGHPages = window.location.hostname.includes('github.io');
+        const base = isGHPages ? `${window.location.origin}/Chegg` : window.location.origin;
+        return `${base}/match/${roomId}`;
     }
 
     showStartScreen() {
@@ -818,7 +824,7 @@ class CheggGame {
         const onRoomCreated = (e) => {
             const roomId = e.detail.roomId;
             const joinUrl = `${window.location.origin}${window.location.pathname}?join=${roomId}`;
-            const spectateUrl = `${window.location.origin}/match/${roomId}`;
+            const spectateUrl = this.getSpectateUrl(roomId);
             this.spectateUrl = spectateUrl;
             // Don't update the player's URL — /match/ is for spectators only
 
@@ -1815,7 +1821,7 @@ class CheggGame {
             // When match is found, show spectate link
             const onMatchStarted = (e) => {
                 const roomId = e.detail.roomId;
-                const spectateUrl = `${window.location.origin}/match/${roomId}`;
+                const spectateUrl = this.getSpectateUrl(roomId);
                 this.spectateUrl = spectateUrl;
                 // Don't update the player's URL — /match/ is for spectators only
                 const area = document.getElementById('spectate-link-area');
