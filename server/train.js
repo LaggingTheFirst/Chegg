@@ -162,9 +162,8 @@ function runHeadlessMatch(weightsA, weightsB, collectPositions = false) {
                 if (card && gameState.isSpawnZone(payload.row, color) && !gameState.getMinionAt(payload.row, payload.col) && ps.mana >= card.cost) {
                     ps.mana -= card.cost;
                     const minion = minionLoader.createSpecializedMinion(card.id, color);
-                    gameState.placeMinion(minion, payload.row, payload.col);
+                    gameState.placeMinion(minion, payload.row, payload.col); // onSpawn called inside
                     ps.hand.splice(payload.cardIndex, 1);
-                    if (minion.onSpawn) minion.onSpawn(gameState);
                 }
             } else if (type === 'MOVE_MINION') {
                 const minion = gameState.minionRegistry.get(payload.minionId);

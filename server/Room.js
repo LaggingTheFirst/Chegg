@@ -210,14 +210,10 @@ export class Room {
         // execute
         playerState.mana -= card.cost;
         const minion = this.minionLoader.createSpecializedMinion(card.id, color);
-        this.gameState.placeMinion(minion, row, col);
+        this.gameState.placeMinion(minion, row, col); // onSpawn is called inside placeMinion
         playerState.hand.splice(cardIndex, 1);
 
         this.logAction(Notation.formatSpawn(color, row, col, card.id));
-
-        if (minion.onSpawn) {
-            minion.onSpawn(this.gameState);
-        }
 
         return true;
     }
